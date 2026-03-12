@@ -653,56 +653,59 @@ parseProjectItem json = case toObject json of
     contentJson <- lmap show $ obj .: "content"
     case toObject contentJson of
       Nothing -> Right Nothing
-      Just contentObj -> do
-        title_ <- lmap show $
-          contentObj .: "title"
-        let
-          url_ = case contentObj .: "url" of
-            Right u -> Just u
-            Left _ -> Nothing
-          number_ = case
-            contentObj .: "number" of
-            Right n -> Just n
-            Left _ -> Nothing
-          body_ = case contentObj .: "body" of
-            Right b -> Just b
-            Left _ -> Nothing
-          repoName_ = case
-            contentObj .: "repository" of
-            Right repoJson ->
-              case toObject repoJson of
-                Just repoObj ->
-                  case repoObj .: "nameWithOwner" of
-                    Right n -> Just n
-                    Left _ -> Nothing
-                Nothing -> Nothing
-            Left _ -> Nothing
-          itemType_ =
-            if isNothing url_ then "DRAFT_ISSUE"
-            else "ISSUE"
-        fieldValsJson <- lmap show $
-          obj .: "fieldValues"
-        case toObject fieldValsJson of
-          Nothing -> Right Nothing
-          Just fvObj -> do
-            fvNodes :: Array Json <-
-              lmap show $ fvObj .: "nodes"
+      Just contentObj ->
+        case contentObj .: "title" of
+          Left _ -> Right Nothing
+          Right title_ -> do
             let
-              status_ = extractFieldValue
-                "Status"
-                fvNodes
-              labels_ = extractLabels fvNodes
-            Right $ Just $ ProjectItem
-              { itemId: itemId_
-              , title: title_
-              , status: status_
-              , itemType: itemType_
-              , url: url_
-              , repoName: repoName_
-              , labels: labels_
-              , number: number_
-              , body: body_
-              }
+              url_ = case contentObj .: "url" of
+                Right u -> Just u
+                Left _ -> Nothing
+              number_ = case
+                contentObj .: "number" of
+                Right n -> Just n
+                Left _ -> Nothing
+              body_ = case contentObj .: "body" of
+                Right b -> Just b
+                Left _ -> Nothing
+              repoName_ = case
+                contentObj .: "repository" of
+                Right repoJson ->
+                  case toObject repoJson of
+                    Just repoObj ->
+                      case
+                        repoObj .: "nameWithOwner"
+                        of
+                        Right n -> Just n
+                        Left _ -> Nothing
+                    Nothing -> Nothing
+                Left _ -> Nothing
+              itemType_ =
+                if isNothing url_ then "DRAFT_ISSUE"
+                else "ISSUE"
+            fieldValsJson <- lmap show $
+              obj .: "fieldValues"
+            case toObject fieldValsJson of
+              Nothing -> Right Nothing
+              Just fvObj -> do
+                fvNodes :: Array Json <-
+                  lmap show $ fvObj .: "nodes"
+                let
+                  status_ = extractFieldValue
+                    "Status"
+                    fvNodes
+                  labels_ = extractLabels fvNodes
+                Right $ Just $ ProjectItem
+                  { itemId: itemId_
+                  , title: title_
+                  , status: status_
+                  , itemType: itemType_
+                  , url: url_
+                  , repoName: repoName_
+                  , labels: labels_
+                  , number: number_
+                  , body: body_
+                  }
 
 -- | Extract a single-select field value by name.
 extractFieldValue
