@@ -240,7 +240,7 @@ groupByOrg items =
       )
       orgs
 
--- | Collapsible repo filter tree (org → repos).
+-- | Collapsible repo filter forest (org → repos).
 renderRepoFilter
   :: forall w
    . State
@@ -268,7 +268,7 @@ renderRepoFilter state items =
               ( ( if isOpen then "\x25BE "
                   else "\x25B8 "
                 )
-                  <> "Repos"
+                  <> "Filter"
                   <>
                     if activeCount > 0 then
                       " (" <> show activeCount
@@ -278,14 +278,11 @@ renderRepoFilter state items =
           ]
       , if not isOpen then HH.text ""
         else
-          HH.div
-            [ HP.class_
-                (HH.ClassName "label-selector")
-            ]
+          HH.div_
             (tree >>= renderOrgGroup state)
       ]
 
--- | A single org group with its repos.
+-- | A single org group with its repos, one per line.
 renderOrgGroup
   :: forall w
    . State
@@ -300,8 +297,6 @@ renderOrgGroup
   -> Array (HH.HTML w Action)
 renderOrgGroup state { org, repos } =
   let
-    orgKey = "proj-repo-org-" <> org
-    isOpen = Set.member orgKey state.expandedItems
     orgCount = Array.foldl
       (\acc r -> acc + r.count)
       0
@@ -310,55 +305,41 @@ renderOrgGroup state { org, repos } =
     [ HH.div
         [ HP.class_
             ( HH.ClassName
-                "detail-heading clickable"
+                "detail-heading"
             )
-        , HE.onClick \_ -> ToggleItem orgKey
         ]
         [ HH.text
-            ( ( if isOpen then "\x25BE "
-                else "\x25B8 "
-              )
-                <> org
-                <> " ("
+            ( org <> " ("
                 <> show orgCount
                 <> ")"
             )
         ]
     ]
-      <>
-        if not isOpen then []
-        else
-          [ HH.div
+      <> map
+        ( \r ->
+            HH.div
               [ HP.class_
-                  (HH.ClassName "label-selector")
-              ]
-              ( map
-                  ( \r ->
-                      HH.span
-                        [ HP.class_
-                            ( HH.ClassName
-                                ( "label-tag clickable"
-                                    <>
-                                      if
-                                        Set.member r.full
-                                          state.projectRepoFilters then " active"
-                                      else ""
-                                )
-                            )
-                        , HE.onClick \_ ->
-                            ToggleProjectRepoFilter
-                              r.full
-                        ]
-                        [ HH.text
-                            ( r.repo <> " ("
-                                <> show r.count
-                                <> ")"
-                            )
-                        ]
+                  ( HH.ClassName
+                      ( "label-tag clickable"
+                          <>
+                            if
+                              Set.member r.full
+                                state.projectRepoFilters then " active"
+                            else ""
+                      )
                   )
-                  repos
-              )
-          ]
+              , HE.onClick \_ ->
+                  ToggleProjectRepoFilter
+                    r.full
+              ]
+              [ HH.text
+                  ( r.repo <> " ("
+                      <> show r.count
+                      <> ")"
+                  )
+              ]
+        )
+        repos
 
 -- | Column order for status values.
 statusOrder :: Array String
