@@ -18,7 +18,7 @@ import Halogen.HTML.Core (AttrName(..))
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Types (Project(..), ProjectItem(..), StatusField)
-import View.DetailWidgets (refreshButton)
+import View.DetailWidgets (copyButton, refreshButton)
 import View.Helpers (linkButton, renderMarkdownRow)
 import View.Types (Action(..), State)
 
@@ -93,6 +93,7 @@ renderProjectRow state (Project p) =
         ]
         [ HH.td_
             [ linkButton p.url
+            , copyButton p.url
             , HH.button
                 [ HE.onClick \_ ->
                     RefreshProjectItems p.id
@@ -547,8 +548,12 @@ renderItemRow state projId mSf (ProjectItem item) =
                 _, _ -> []
                 <>
                   case item.url of
-                    Just url -> [ linkButton url ]
-                    Nothing -> []
+                    Just url ->
+                      [ linkButton url
+                      , copyButton url
+                      ]
+                    Nothing ->
+                      [ copyButton item.title ]
                 <>
                   case item.draftId of
                     Just _ | isDraft ->
