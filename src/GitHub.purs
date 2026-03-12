@@ -17,6 +17,7 @@ module GitHub
   , fetchUserProjects
   , fetchProjectItems
   , updateItemStatus
+  , addDraftItem
   ) where
 
 import Prelude
@@ -42,7 +43,10 @@ import Data.Either (Either(..))
 import Data.Int (fromString) as Int
 import Data.Maybe (Maybe(..), fromMaybe, isNothing)
 import Data.HTTP.Method (Method(..))
-import Data.String (Pattern(..), indexOf, drop, take)
+import Data.String
+  ( Pattern(..), indexOf, drop, take, replaceAll
+  )
+import Data.String.Pattern (Replacement(..))
 import Data.Traversable (traverse)
 import Effect.Aff (Aff, try)
 import Effect.Exception (message)
@@ -823,3 +827,32 @@ updateItemStatus token projectId itemId fieldId optionId = do
   case result of
     Left err -> pure $ Left err
     Right _ -> pure $ Right unit
+
+-- | Create a draft issue on a project board.
+addDraftItem
+  :: String
+  -> String
+  -> String
+  -> Aff (Either String Unit)
+addDraftItem token projectId title = do
+  let
+    mutation =
+      "mutation { addProjectV2DraftIssue("
+        <> "input: {"
+        <> " projectId: \""
+        <> projectId
+        <> "\""
+        <> " title: \""
+        <> escapeGql title
+        <> "\""
+        <> " }) { projectItem { id } } }"
+  result <- ghGraphQL token mutation
+  case result of
+    Left err -> pure $ Left err
+    Right _ -> pure $ Right unit
+
+-- | Escape a string for use in a GraphQL query.
+escapeGql :: String -> String
+escapeGql = replaceAll (Pattern "\\") (Replacement "\\\\")
+  >>> replaceAll (Pattern "\"") (Replacement "\\\"")
+  >>> replaceAll (Pattern "\n") (Replacement "\\n")

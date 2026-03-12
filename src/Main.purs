@@ -26,6 +26,7 @@ import GitHub
   , fetchWorkflowJobs
   , fetchWorkflowRuns
   , updateItemStatus
+  , addDraftItem
   )
 import Halogen as H
 import Halogen.Aff as HA
@@ -119,6 +120,7 @@ initialState =
   , projectItemsLoading: false
   , projectRepoFilters: Set.empty
   , projectStatusFields: Map.empty
+  , newItemTitle: ""
   }
 
 render :: forall m. State -> H.ComponentHTML Action () m
@@ -784,6 +786,21 @@ handleAction = case _ of
           then Set.delete repo st.projectRepoFilters
           else Set.insert repo st.projectRepoFilters
     H.modify_ _ { projectRepoFilters = filters }
+  SetNewItemTitle t ->
+    H.modify_ _ { newItemTitle = t }
+  SubmitNewItem projectId -> do
+    st <- H.get
+    let title = st.newItemTitle
+    when (title /= "") do
+      H.modify_ _ { newItemTitle = "" }
+      result <- H.liftAff $
+        addDraftItem st.token projectId title
+      case result of
+        Left err ->
+          H.modify_ _ { error = Just err }
+        Right _ ->
+          handleAction
+            (RefreshProjectItems projectId)
   SetItemStatus projectId itemId newStatus -> do
     st <- H.get
     case Map.lookup projectId
