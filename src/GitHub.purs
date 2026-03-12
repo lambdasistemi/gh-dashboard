@@ -20,6 +20,7 @@ module GitHub
   , addDraftItem
   , updateDraftItem
   , deleteProjectItem
+  , renameProject
   ) where
 
 import Prelude
@@ -940,6 +941,33 @@ updateDraftItem token draftId title = do
         draftIssueId: $draftIssueId
         title: $title
       }) { draftIssue { id } }
+    }
+    """
+    vars
+  case result of
+    Left err -> pure $ Left err
+    Right _ -> pure $ Right unit
+
+-- | Rename a project.
+renameProject
+  :: String
+  -> String
+  -> String
+  -> Aff (Either String Unit)
+renameProject token projectId title = do
+  let
+    vars = encodeJson
+      ( "projectId" := projectId
+          ~> "title" := title
+          ~> jsonEmptyObject
+      )
+  result <- ghGraphQL token
+    """
+    mutation($projectId: ID!, $title: String!) {
+      updateProjectV2(input: {
+        projectId: $projectId
+        title: $title
+      }) { projectV2 { id } }
     }
     """
     vars

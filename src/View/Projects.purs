@@ -81,6 +81,8 @@ renderProjectRow state (Project p) =
   let
     isExpanded =
       state.expandedProject == Just p.id
+    isEditing =
+      state.editingProject == Just p.id
     rowClass =
       if isExpanded then "repo-row expanded"
       else "repo-row"
@@ -101,14 +103,58 @@ renderProjectRow state (Project p) =
                     "event.stopPropagation()"
                 ]
                 [ HH.text "\x21BB" ]
-            ]
-        , HH.td_
-            [ HH.span
+            , HH.button
                 [ HP.class_
-                    (HH.ClassName "repo-name")
+                    (HH.ClassName "btn-hide")
+                , HP.title "Rename"
+                , HE.onClick \_ ->
+                    StartRenameProject p.id p.title
+                , HP.attr (AttrName "onclick")
+                    "event.stopPropagation()"
                 ]
-                [ HH.text p.title ]
+                [ HH.text "\x270E" ]
             ]
+        , if isEditing then
+            HH.td_
+              [ HH.div
+                  [ HP.class_
+                      (HH.ClassName "add-repo-bar")
+                  ]
+                  [ HH.input
+                      [ HP.type_ HP.InputText
+                      , HP.value
+                          state.editProjectTitle
+                      , HP.class_
+                          ( HH.ClassName
+                              "filter-input"
+                          )
+                      , HE.onValueInput
+                          SetRenameProjectTitle
+                      , HP.attr
+                          (AttrName "onclick")
+                          "event.stopPropagation()"
+                      ]
+                  , HH.button
+                      [ HP.class_
+                          (HH.ClassName "btn-small")
+                      , HE.onClick \_ ->
+                          SubmitRenameProject p.id
+                            state.editProjectTitle
+                      , HP.attr
+                          (AttrName "onclick")
+                          "event.stopPropagation()"
+                      ]
+                      [ HH.text "Save" ]
+                  ]
+              ]
+          else
+            HH.td_
+              [ HH.span
+                  [ HP.class_
+                      (HH.ClassName "repo-name")
+                  ]
+                  [ HH.text p.title ]
+              ]
         , HH.td_
             [ HH.span
                 [ HP.class_
