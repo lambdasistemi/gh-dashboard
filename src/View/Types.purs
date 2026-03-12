@@ -61,6 +61,9 @@ data Action
   | SetEditItemTitle String
   | SubmitEditItem String String String
   | DeleteItem String String
+  | StartRenameProject String String
+  | SetRenameProjectTitle String
+  | SubmitRenameProject String String
 
 -- | Application state (referenced by view).
 type State =
@@ -98,4 +101,6 @@ type State =
   , newItemTitle :: String
   , editingItem :: Maybe String
   , editItemTitle :: String
+  , editingProject :: Maybe String
+  , editProjectTitle :: String
   }

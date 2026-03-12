@@ -29,6 +29,7 @@ import GitHub
   , addDraftItem
   , updateDraftItem
   , deleteProjectItem
+  , renameProject
   )
 import Halogen as H
 import Halogen.Aff as HA
@@ -57,6 +58,7 @@ import Storage
 import Types
   ( Issue(..)
   , Page(..)
+  , Project(..)
   , ProjectItem(..)
   , PullRequest(..)
   , Repo(..)
@@ -120,6 +122,8 @@ initialState =
   , newItemTitle: ""
   , editingItem: Nothing
   , editItemTitle: ""
+  , editingProject: Nothing
+  , editProjectTitle: ""
   }
 
 render :: forall m. State -> H.ComponentHTML Action () m
@@ -913,6 +917,35 @@ handleAction = case _ of
               }
       result <- H.liftAff $
         deleteProjectItem st.token projectId itemId
+      case result of
+        Left err ->
+          H.modify_ _ { error = Just err }
+        Right _ -> pure unit
+  StartRenameProject projectId currentTitle ->
+    H.modify_ _
+      { editingProject = Just projectId
+      , editProjectTitle = currentTitle
+      }
+  SetRenameProjectTitle t ->
+    H.modify_ _ { editProjectTitle = t }
+  SubmitRenameProject projectId newTitle -> do
+    st <- H.get
+    H.modify_ _
+      { editingProject = Nothing
+      , editProjectTitle = ""
+      }
+    when (newTitle /= "") do
+      let
+        updated = map
+          ( \(Project proj) ->
+              if proj.id == projectId then
+                Project proj { title = newTitle }
+              else Project proj
+          )
+          st.projects
+      H.modify_ _ { projects = updated }
+      result <- H.liftAff $
+        renameProject st.token projectId newTitle
       case result of
         Left err ->
           H.modify_ _ { error = Just err }
