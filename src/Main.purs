@@ -181,8 +181,15 @@ handleAction = case _ of
       tok -> do
         H.modify_ _
           { token = tok, hasToken = true }
-        doRefresh tok
-        handleAction (SwitchPage vs.currentPage)
+        case vs.currentPage of
+          ReposPage -> doRefresh tok
+          ProjectsPage -> do
+            handleAction RefreshProjects
+            case vs.expandedProject of
+              Nothing -> pure unit
+              Just projId ->
+                handleAction
+                  (RefreshProjectItems projId)
   SetToken tok ->
     H.modify_ _ { token = tok }
   SubmitToken -> do
@@ -712,10 +719,14 @@ handleAction = case _ of
   SwitchPage page -> do
     H.modify_ _ { currentPage = page }
     persistView
-    when (page == ProjectsPage) do
-      st <- H.get
-      when (null st.projects) do
-        handleAction RefreshProjects
+    st <- H.get
+    case page of
+      ProjectsPage ->
+        when (null st.projects) do
+          handleAction RefreshProjects
+      ReposPage ->
+        when (null st.repos) do
+          doRefresh st.token
   RefreshProjects -> do
     st <- H.get
     H.modify_ _ { projectsLoading = true }
