@@ -170,7 +170,10 @@ renderProjectDetail state projectId =
                       items
                 in
                   HH.div_
-                    ( [ renderRepoFilter state items ]
+                    ( [ renderNewItemForm state
+                          projectId
+                      , renderRepoFilter state items
+                      ]
                         <> map
                           ( \col ->
                               renderStatusSection
@@ -182,6 +185,30 @@ renderProjectDetail state projectId =
                           (groupByStatus filtered)
                     )
         ]
+    ]
+
+-- | Inline form to create a draft item.
+renderNewItemForm
+  :: forall w
+   . State
+  -> String
+  -> HH.HTML w Action
+renderNewItemForm state projectId =
+  HH.div
+    [ HP.class_ (HH.ClassName "add-repo-bar") ]
+    [ HH.input
+        [ HP.type_ HP.InputText
+        , HP.placeholder "New draft item…"
+        , HP.value state.newItemTitle
+        , HP.class_ (HH.ClassName "filter-input")
+        , HE.onValueInput SetNewItemTitle
+        ]
+    , HH.button
+        [ HP.class_ (HH.ClassName "btn-small")
+        , HE.onClick \_ ->
+            SubmitNewItem projectId
+        ]
+        [ HH.text "Add" ]
     ]
 
 -- | Split "owner/repo" into { org, repo } pair.

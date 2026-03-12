@@ -55,6 +55,8 @@ data Action
   | RefreshProjectItem String String Int
   | ToggleProjectRepoFilter String
   | SetItemStatus String String String
+  | SetNewItemTitle String
+  | SubmitNewItem String
 
 -- | Application state (referenced by view).
 type State =
@@ -89,4 +91,5 @@ type State =
   , projectItemsLoading :: Boolean
   , projectRepoFilters :: Set String
   , projectStatusFields :: Map String StatusField
+  , newItemTitle :: String
   }
