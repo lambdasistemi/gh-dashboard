@@ -72,6 +72,30 @@ export const attachTerminal = (elemId) => (launchKey) => (wsUrl) => () => {
     var resizeHandler = () => fitAddon.fit();
     window.addEventListener('resize', resizeHandler);
 
+    // Drag-to-resize handle
+    var handle = document.querySelector(
+      '[data-terminal="' + elemId + '"]'
+    );
+    if (handle) {
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        var startY = e.clientY;
+        var startH = container.offsetHeight;
+        var onMove = (ev) => {
+          var newH = Math.max(150, startH + ev.clientY - startY);
+          container.style.height = newH + 'px';
+          fitAddon.fit();
+        };
+        var onUp = () => {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          fitAddon.fit();
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+    }
+
     _terminals[elemId] = { term, ws, fitAddon, resizeHandler, launchKey, container };
   });
 };
