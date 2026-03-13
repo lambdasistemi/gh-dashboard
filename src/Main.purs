@@ -5,7 +5,9 @@ import Prelude
 import Data.Argonaut.Core (jsonEmptyObject, stringify)
 import Data.Argonaut.Encode.Class (encodeJson)
 import Data.Argonaut.Encode.Combinators ((:=), (~>))
-import Data.Array (filter, index, length, nubByEq, null)
+import Data.Array
+  ( filter, index, length, nubByEq, null
+  )
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.HTTP.Method (Method(..))
@@ -49,7 +51,11 @@ import Halogen as H
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
 import FFI.Clipboard (copyToClipboard)
-import FFI.Terminal (attachTerminal, destroyTerminal)
+import FFI.Terminal
+  ( attachTerminal
+  , destroyOrphanedTerminals
+  , destroyTerminal
+  )
 import FFI.Dialog (confirmDialog)
 import FFI.Storage as FFIStorage
 import FFI.Theme (setBodyTheme)
@@ -546,6 +552,19 @@ handleAction = case _ of
           else
             Set.delete key st.expandedItems
       }
+    -- When collapsing, clean up any terminals
+    -- whose container was removed from the DOM.
+    when (not opening) do
+      orphanKeys <- liftEffect
+        destroyOrphanedTerminals
+      let
+        removed = Set.fromFoldable orphanKeys
+      when (not (Set.isEmpty removed)) do
+        H.modify_ \s -> s
+          { launchedItems = Set.difference
+              s.launchedItems
+              removed
+          }
     persistView
     when opening do
       let
@@ -1102,7 +1121,8 @@ handleAction = case _ of
               <> show issueNum
               <> "/terminal"
           liftEffect
-            $ attachTerminal elemId wsUrl
+            $ attachTerminal elemId itemKey
+                wsUrl
   DetachAgent fullName issueNum -> do
     let
       itemKey = fullName <> "#"
