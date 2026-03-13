@@ -32,6 +32,15 @@ Repository dashboard for GitHub — browse your repos, open issues and pull requ
 - **Resizable terminals** — drag the handle below each terminal to adjust its height
 - **Active terminal highlighting** — issue rows with a running terminal get a blue accent border and title
 
+## Token scopes
+
+Create a [personal access token](https://github.com/settings/tokens/new?scopes=repo,read:project&description=gh-dashboard) with these scopes:
+
+| Scope | Required for |
+|-------|-------------|
+| `repo` | Repos, issues, PRs, CI checks |
+| `read:project` | Projects tab |
+
 ## Stack
 
 PureScript · Halogen · GitHub REST API · marked.js · xterm.js · esbuild

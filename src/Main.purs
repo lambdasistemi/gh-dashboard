@@ -21,6 +21,7 @@ import Data.String
   , replace
   , replaceAll
   , split
+  , toLower
   )
 import Data.Traversable (traverse_)
 import Data.Tuple (Tuple(..))
@@ -784,7 +785,7 @@ handleAction = case _ of
     case result of
       Left err ->
         H.modify_ _
-          { error = Just err
+          { error = Just (friendlyProjectError err)
           , projectsLoading = false
           }
       Right projs ->
@@ -1304,3 +1305,27 @@ loadWorkflowShaDetails fullName = do
                             }
             )
             shaRuns
+
+-- | Rewrite GraphQL project errors into a
+-- | user-friendly hint when the token lacks
+-- | the required `read:project` scope.
+friendlyProjectError :: String -> String
+friendlyProjectError err =
+  let
+    low = toLower err
+    scopeHint =
+      "Your token does not have the "
+        <> "project scope. Please create a "
+        <> "token with read:project (or "
+        <> "project) and update it in the "
+        <> "settings."
+  in
+    if
+      indexOf (Pattern "insufficient_scopes")
+        low
+        /= Nothing
+        || indexOf (Pattern "scope") low
+        /= Nothing
+        && indexOf (Pattern "project") low
+        /= Nothing then scopeHint
+    else err
