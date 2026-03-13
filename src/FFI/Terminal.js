@@ -69,8 +69,8 @@ export const attachTerminal = (elemId) => (launchKey) => (wsUrl) => () => {
 };
 
 // Destroy all terminals whose container element
-// is no longer in the DOM. Returns the launch keys
-// of cleaned-up terminals.
+// is no longer in the DOM, after next animation frame.
+// Returns a promise of the launch keys cleaned up.
 export const destroyOrphanedTerminals = () => {
   var orphanedKeys = [];
   var orphanedIds = [];

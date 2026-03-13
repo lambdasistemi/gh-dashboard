@@ -205,6 +205,7 @@ renderIssueRow state isHidden (Issue i) =
               ]
                 <> launchButton
                   state.launchedItems
+                  key
                   (fromMaybe "" state.expanded)
                   i.number
             )

@@ -556,6 +556,7 @@ renderItemRow state projId mSf (ProjectItem item) =
                   ]
                     <> launchButton
                       state.launchedItems
+                      key
                       repo
                       n
                 _, _ -> []
