@@ -40,7 +40,9 @@ import Data.Argonaut.Decode.Error (JsonDecodeError(..))
 import Data.Argonaut.Encode.Class (encodeJson)
 import Data.Argonaut.Encode.Combinators ((~>), (:=))
 import Data.Argonaut.Parser (jsonParser)
-import Data.Array (catMaybes, mapMaybe, nubByEq)
+import Data.Array
+  ( catMaybes, intercalate, mapMaybe, nubByEq
+  )
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
 import Data.Int (fromString) as Int
@@ -493,7 +495,31 @@ ghGraphQL token query variables = do
     Right txt -> case jsonParser txt of
       Left e ->
         pure $ Left ("JSON parse error: " <> e)
-      Right json -> pure $ Right json
+      Right json -> case extractGraphQLErrors json of
+        Just err -> pure $ Left err
+        Nothing -> pure $ Right json
+
+-- | Extract error messages from a GraphQL response.
+-- | Returns Nothing if no errors field or it's empty.
+extractGraphQLErrors :: Json -> Maybe String
+extractGraphQLErrors json = do
+  obj <- toObject json
+  case obj .: "errors" of
+    Left _ -> Nothing
+    Right (errArr :: Array Json) ->
+      let
+        msgs = mapMaybe extractMessage errArr
+      in
+        if msgs == [] then
+          Just "GraphQL error (no details)"
+        else Just (intercalate "; " msgs)
+  where
+  extractMessage :: Json -> Maybe String
+  extractMessage j = do
+    o <- toObject j
+    case o .: "message" of
+      Left _ -> Nothing
+      Right (m :: String) -> Just m
 
 -- | Light query: project list with item counts.
 projectsListQuery :: String

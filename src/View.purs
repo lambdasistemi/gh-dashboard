@@ -60,7 +60,7 @@ renderTokenForm state =
             [ HH.li_
                 [ HH.a
                     [ HP.href
-                        "https://github.com/settings/tokens/new?scopes=repo&description=gh-dashboard"
+                        "https://github.com/settings/tokens/new?scopes=repo,read:project&description=gh-dashboard"
                     , HP.target "_blank"
                     , HP.class_
                         (HH.ClassName "token-link")
@@ -70,7 +70,10 @@ renderTokenForm state =
                     ]
                 , HH.text " (select "
                 , HH.code_ [ HH.text "repo" ]
-                , HH.text " scope)"
+                , HH.text " and "
+                , HH.code_
+                    [ HH.text "read:project" ]
+                , HH.text " scopes)"
                 ]
             , HH.li_
                 [ HH.text
