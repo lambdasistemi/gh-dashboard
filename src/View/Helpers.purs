@@ -40,7 +40,8 @@ termElementId key =
           key
       )
 
--- | Row with a terminal container div.
+-- | Row with a terminal container div + resize
+-- | handle.
 renderTerminalRow
   :: forall w i. String -> Array (HH.HTML w i)
 renderTerminalRow elemId =
@@ -54,6 +55,15 @@ renderTerminalRow elemId =
                       "terminal-container"
                   )
               , HP.id elemId
+              ]
+              []
+          , HH.div
+              [ HP.class_
+                  ( HH.ClassName
+                      "terminal-resize-handle"
+                  )
+              , HP.attr (AttrName "data-terminal")
+                  elemId
               ]
               []
           ]

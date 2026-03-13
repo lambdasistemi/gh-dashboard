@@ -164,8 +164,10 @@
     .detail-body a { color: var(--accent); }
     .detail-body blockquote { border-left: 3px solid var(--border); padding-left: 12px; margin: 2px 0; color: var(--text-muted); }
     .detail-body img { max-width: 100%; }
-    .terminal-container { height: 400px; background: #1a1a2e; border-radius: 4px; overflow: hidden; }
+    .terminal-container { height: 400px; background: #1a1a2e; border-radius: 4px; overflow: hidden; position: relative; }
     .terminal-container .xterm { height: 100%; }
+    .terminal-resize-handle { height: 6px; cursor: ns-resize; background: var(--border); border-radius: 0 0 4px 4px; }
+    .terminal-resize-handle:hover { background: var(--accent); }
     .repo-row.terminal-active { background: var(--bg-surface); border-left: 3px solid var(--accent); }
     .repo-row.terminal-active td:first-child { padding-left: 9px; }
     .repo-row.terminal-active .repo-name, .repo-row.terminal-active span { color: var(--accent); font-weight: 600; }
