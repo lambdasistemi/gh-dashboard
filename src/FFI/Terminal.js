@@ -1,6 +1,6 @@
 var _terminals = {};
 
-export const attachTerminal = (elemId) => (wsUrl) => () => {
+export const attachTerminal = (elemId) => (launchKey) => (wsUrl) => () => {
   // Clean up existing terminal for this ID
   if (_terminals[elemId]) {
     try { _terminals[elemId].ws.close(); } catch (_) {}
@@ -61,12 +61,37 @@ export const attachTerminal = (elemId) => (wsUrl) => () => {
       }
     });
 
-    // Re-fit on window resize
     var resizeHandler = () => fitAddon.fit();
     window.addEventListener('resize', resizeHandler);
 
-    _terminals[elemId] = { term, ws, fitAddon, resizeHandler };
+    _terminals[elemId] = { term, ws, fitAddon, resizeHandler, launchKey };
   });
+};
+
+// Destroy all terminals whose container element
+// is no longer in the DOM. Returns the launch keys
+// of cleaned-up terminals.
+export const destroyOrphanedTerminals = () => {
+  var orphanedKeys = [];
+  var orphanedIds = [];
+  for (var id in _terminals) {
+    if (!document.getElementById(id)) {
+      orphanedKeys.push(_terminals[id].launchKey);
+      orphanedIds.push(id);
+    }
+  }
+  for (var i = 0; i < orphanedIds.length; i++) {
+    var oid = orphanedIds[i];
+    try { _terminals[oid].ws.close(); } catch (_) {}
+    try {
+      window.removeEventListener(
+        'resize', _terminals[oid].resizeHandler
+      );
+    } catch (_) {}
+    try { _terminals[oid].term.dispose(); } catch (_) {}
+    delete _terminals[oid];
+  }
+  return orphanedKeys;
 };
 
 export const destroyTerminal = (elemId) => () => {
