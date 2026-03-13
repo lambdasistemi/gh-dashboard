@@ -64,9 +64,10 @@ launchButton
   :: forall w
    . Set.Set String
   -> String
+  -> String
   -> Int
   -> Array (HH.HTML w Action)
-launchButton launched repoName issueNum =
+launchButton launched toggleKey repoName issueNum =
   let
     key = repoName <> "#" <> show issueNum
     isActive = Set.member key launched
@@ -94,7 +95,8 @@ launchButton launched repoName issueNum =
     else
       [ HH.button
           [ HE.onClick \_ ->
-              LaunchAgent repoName issueNum
+              LaunchAgent toggleKey repoName
+                issueNum
           , HP.class_ (HH.ClassName "btn-hide")
           , HP.title "Launch agent"
           , HP.attr (AttrName "onclick")

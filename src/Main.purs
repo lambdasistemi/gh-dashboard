@@ -51,11 +51,7 @@ import Halogen as H
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
 import FFI.Clipboard (copyToClipboard)
-import FFI.Terminal
-  ( attachTerminal
-  , destroyOrphanedTerminals
-  , destroyTerminal
-  )
+import FFI.Terminal (attachTerminal, destroyTerminal)
 import FFI.Dialog (confirmDialog)
 import FFI.Storage as FFIStorage
 import FFI.Theme (setBodyTheme)
@@ -150,6 +146,7 @@ initialState =
   , editProjectTitle: ""
   , agentServer: ""
   , launchedItems: Set.empty
+  , terminalKeys: Map.empty
   }
 
 render :: forall m. State -> H.ComponentHTML Action () m
@@ -552,19 +549,21 @@ handleAction = case _ of
           else
             Set.delete key st.expandedItems
       }
-    -- When collapsing, clean up any terminals
-    -- whose container was removed from the DOM.
+    -- When collapsing an item that has an active
+    -- terminal, detach it via terminalKeys lookup.
     when (not opening) do
-      orphanKeys <- liftEffect
-        destroyOrphanedTerminals
-      let
-        removed = Set.fromFoldable orphanKeys
-      when (not (Set.isEmpty removed)) do
-        H.modify_ \s -> s
-          { launchedItems = Set.difference
-              s.launchedItems
-              removed
-          }
+      case Map.lookup key st.terminalKeys of
+        Nothing -> pure unit
+        Just itemKey -> do
+          liftEffect $ destroyTerminal
+            (termElementId itemKey)
+          H.modify_ \s -> s
+            { launchedItems = Set.delete
+                itemKey
+                s.launchedItems
+            , terminalKeys = Map.delete key
+                s.terminalKeys
+            }
     persistView
     when opening do
       let
@@ -1035,7 +1034,7 @@ handleAction = case _ of
                 H.modify_ _
                   { error = Just err }
               Right _ -> pure unit
-  LaunchAgent fullName issueNum -> do
+  LaunchAgent toggleKey fullName issueNum -> do
     st <- H.get
     let
       parts = split (Pattern "/") fullName
@@ -1085,9 +1084,6 @@ handleAction = case _ of
         Right _ -> do
           -- Expand the item so the terminal
           -- div appears in the DOM
-          let
-            issueKey = "issue-"
-              <> show issueNum
           H.modify_ \s -> s
             { error = Nothing
             , info = Just
@@ -1098,8 +1094,11 @@ handleAction = case _ of
                 Set.insert itemKey
                   s.launchedItems
             , expandedItems =
-                Set.insert issueKey
+                Set.insert toggleKey
                   s.expandedItems
+            , terminalKeys =
+                Map.insert toggleKey itemKey
+                  s.terminalKeys
             }
           let
             wsProto =

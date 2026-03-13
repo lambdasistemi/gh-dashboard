@@ -64,7 +64,7 @@ data Action
   | StartRenameProject String String
   | SetRenameProjectTitle String
   | SubmitRenameProject String String
-  | LaunchAgent String Int
+  | LaunchAgent String String Int
   | DetachAgent String Int
   | StopAgent String Int
   | SetAgentServer String
@@ -110,4 +110,5 @@ type State =
   , editProjectTitle :: String
   , agentServer :: String
   , launchedItems :: Set String
+  , terminalKeys :: Map String String
   }
