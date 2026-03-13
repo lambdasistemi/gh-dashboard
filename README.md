@@ -28,10 +28,13 @@ Repository dashboard for GitHub — browse your repos, open issues and pull requ
 - **Rate limit display** — shows remaining GitHub API quota
 - **Import / export settings** — download all dashboard settings as JSON; import from file to restore (token excluded for security)
 - **Reset** — clears all saved data (token, repo list, hidden items, theme, filters)
+- **Agent daemon integration** — launch, detach and stop [agent-daemon](https://github.com/lambdasistemi/agent-daemon) sessions from issue and project item rows; inline xterm.js terminal replaces the description body with a live terminal connected via WebSocket
+- **Resizable terminals** — drag the handle below each terminal to adjust its height
+- **Active terminal highlighting** — issue rows with a running terminal get a blue accent border and title
 
 ## Stack
 
-PureScript · Halogen · GitHub REST API · marked.js · esbuild
+PureScript · Halogen · GitHub REST API · marked.js · xterm.js · esbuild
 
 ## Development
 
