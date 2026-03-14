@@ -2,17 +2,21 @@ module Main where
 
 import Prelude
 
-import Data.Argonaut.Core (jsonEmptyObject, stringify)
+import Data.Argonaut.Core
+  ( Json, jsonEmptyObject, stringify, toArray, toObject
+  )
+import Data.Argonaut.Decode.Combinators ((.:))
 import Data.Argonaut.Encode.Class (encodeJson)
 import Data.Argonaut.Encode.Combinators ((:=), (~>))
+import Data.Argonaut.Parser (jsonParser)
 import Data.Array
   ( filter, index, length, nubByEq, null
   )
 import Data.Array as Array
-import Data.Either (Either(..))
+import Data.Either (Either(..), hush)
 import Data.HTTP.Method (Method(..))
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set as Set
 import Data.String
   ( Pattern(..)
@@ -149,6 +153,7 @@ initialState =
   , launchedItems: Set.empty
   , terminalKeys: Map.empty
   , terminalUrls: Map.empty
+  , agentSessions: Map.empty
   }
 
 render :: forall m. State -> H.ComponentHTML Action () m
@@ -212,6 +217,7 @@ handleAction = case _ of
       tok -> do
         H.modify_ _
           { token = tok, hasToken = true }
+        handleAction RefreshAgentSessions
         case vs.currentPage of
           ReposPage -> doRefresh tok
           ProjectsPage -> do
@@ -788,12 +794,13 @@ handleAction = case _ of
           { error = Just (friendlyProjectError err)
           , projectsLoading = false
           }
-      Right projs ->
+      Right projs -> do
         H.modify_ _
           { projects = projs
           , projectsLoading = false
           , error = Nothing
           }
+        handleAction RefreshAgentSessions
   ExpandProject projectId -> do
     st <- H.get
     let
@@ -1181,6 +1188,32 @@ handleAction = case _ of
   SetAgentServer url -> do
     H.modify_ _ { agentServer = url }
     liftEffect $ saveAgentServer url
+  RefreshAgentSessions -> do
+    st <- H.get
+    when (st.agentServer /= "") do
+      result <- H.liftAff $ try do
+        resp <- fetch
+          (st.agentServer <> "/sessions")
+          { method: GET }
+        resp.text
+      case result of
+        Left _ -> pure unit
+        Right txt -> case jsonParser txt of
+          Left _ -> pure unit
+          Right json ->
+            case toArray json of
+              Nothing -> pure unit
+              Just arr ->
+                let
+                  entries = arr >>= \sj ->
+                    case parseSession sj of
+                      Nothing -> []
+                      Just e -> [ e ]
+                in
+                  H.modify_ _
+                    { agentSessions =
+                        Map.fromFoldable entries
+                    }
 
 -- | Convert a launch key to a DOM element ID.
 termElementId :: String -> String
@@ -1205,6 +1238,23 @@ reattachTerminals st =
               wsUrl
     )
     (Set.toUnfoldable st.launchedItems :: Array String)
+
+-- | Parse a single agent session JSON object into
+-- | a (key, state) tuple.
+parseSession :: Json -> Maybe (Tuple String String)
+parseSession json = do
+  obj <- toObject json
+  repoJson <- hush (obj .: "repo")
+  repoObj <- toObject repoJson
+  owner <- hush (repoObj .: "owner") :: Maybe String
+  name <- hush (repoObj .: "name") :: Maybe String
+  issue <- hush (obj .: "issue") :: Maybe Int
+  let
+    state = fromMaybe "unknown"
+      (hush (obj .: "state") :: Maybe String)
+  Just $ Tuple
+    (owner <> "/" <> name <> "#" <> show issue)
+    state
 
 -- | Extract unique SHAs from runs, preserving order.
 extractShas :: Array WorkflowRun -> Array String

@@ -68,6 +68,7 @@ data Action
   | DetachAgent String Int
   | StopAgent String Int
   | SetAgentServer String
+  | RefreshAgentSessions
 
 -- | Application state (referenced by view).
 type State =
@@ -112,4 +113,5 @@ type State =
   , launchedItems :: Set String
   , terminalKeys :: Map String String
   , terminalUrls :: Map String String
+  , agentSessions :: Map String String
   }

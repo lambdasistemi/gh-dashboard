@@ -540,16 +540,23 @@ renderItemRow state projId mSf (ProjectItem item) =
     curStatus = fromMaybe "(no status)" item.status
     isDraft = item.itemType == "DRAFT_ISSUE"
     isEditing = state.editingItem == Just item.itemId
-    hasTerminal =
+    itemKey =
       case item.repoName, item.number of
         Just repo, Just n ->
-          Set.member (repo <> "#" <> show n)
-            state.launchedItems
-        _, _ -> false
+          Just (repo <> "#" <> show n)
+        _, _ -> Nothing
+    hasTerminal = case itemKey of
+      Just k -> Set.member k state.launchedItems
+      Nothing -> false
+    sessionState = case itemKey of
+      Just k -> Map.lookup k state.agentSessions
+      Nothing -> Nothing
     rowClass = "repo-row"
       <>
         if hasTerminal then " terminal-active"
-        else ""
+        else case sessionState of
+          Just _ -> " session-active"
+          Nothing -> ""
   in
     [ HH.tr
         [ HE.onClick \_ -> ToggleItem key
@@ -644,14 +651,36 @@ renderItemRow state projId mSf (ProjectItem item) =
           else
             HH.td_
               [ HH.span_
-                  [ HH.text
-                      ( case item.number of
-                          Just n ->
-                            "#" <> show n <> " "
-                          Nothing -> ""
-                      )
-                  , HH.text item.title
-                  ]
+                  ( [ HH.text
+                        ( case item.number of
+                            Just n ->
+                              "#" <> show n <> " "
+                            Nothing -> ""
+                        )
+                    ]
+                      <> case sessionState of
+                        Just st ->
+                          [ HH.span
+                              [ HP.class_
+                                  ( HH.ClassName
+                                      ( "session-badge"
+                                          <>
+                                            if st == "running" then " session-running"
+                                            else ""
+                                      )
+                                  )
+                              , HP.title
+                                  ("Agent: " <> st)
+                              ]
+                              [ HH.text
+                                  ( if st == "running" then "\x25C9 "
+                                    else "\x25CB "
+                                  )
+                              ]
+                          ]
+                        Nothing -> []
+                      <> [ HH.text item.title ]
+                  )
               , if null item.labels then
                   HH.text ""
                 else

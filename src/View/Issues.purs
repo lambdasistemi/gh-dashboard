@@ -6,7 +6,8 @@ module View.Issues
 import Prelude
 
 import Data.Array (any, filter, length, null, partition)
-import Data.Maybe (fromMaybe)
+import Data.Map as Map
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set as Set
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -196,10 +197,14 @@ renderIssueRow state isHidden (Issue i) =
         <> show i.number
     hasTerminal = Set.member launchKey
       state.launchedItems
+    sessionState = Map.lookup launchKey
+      state.agentSessions
     rowClass = "repo-row"
       <>
         if hasTerminal then " terminal-active"
-        else ""
+        else case sessionState of
+          Just _ -> " session-active"
+          Nothing -> ""
   in
     [ HH.tr
         [ HE.onClick \_ -> ToggleItem key
@@ -220,12 +225,34 @@ renderIssueRow state isHidden (Issue i) =
             )
         , HH.td_
             [ HH.span_
-                [ HH.text
-                    ( "#" <> show i.number
-                        <> " "
-                        <> i.title
-                    )
-                ]
+                ( [ HH.text
+                      ( "#" <> show i.number
+                          <> " "
+                      )
+                  ]
+                    <> case sessionState of
+                      Just st ->
+                        [ HH.span
+                            [ HP.class_
+                                ( HH.ClassName
+                                    ( "session-badge"
+                                        <>
+                                          if st == "running" then " session-running"
+                                          else ""
+                                    )
+                                )
+                            , HP.title
+                                ("Agent: " <> st)
+                            ]
+                            [ HH.text
+                                ( if st == "running" then "\x25C9 "
+                                  else "\x25CB "
+                                )
+                            ]
+                        ]
+                      Nothing -> []
+                    <> [ HH.text i.title ]
+                )
             , renderLabels i.labels
             ]
         , HH.td_
