@@ -31,5 +31,17 @@ test-auth: bundle
     npm install --silent
     GH_DASHBOARD_TOKEN=$(gh auth token) npx playwright test
 
+build-docs:
+    mkdocs build --strict
+
+serve-docs:
+    mkdocs serve
+
+deploy-docs:
+    mkdocs gh-deploy --force
+
+# Include docs build in CI for validation
+ci-docs: build-docs
+
 clean:
-    rm -rf output/ dist/index.js
+    rm -rf output/ dist/index.js site/

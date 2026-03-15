@@ -4,3 +4,4 @@ dist/index.js
 node_modules/
 .psci_modules/
 test-results/
+site/
