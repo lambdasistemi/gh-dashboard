@@ -1,94 +1,98 @@
+-- | Application entry point and action dispatcher.
+-- |
+-- | This module is intentionally thin. It wires
+-- | together:
+-- |
+-- | 1. **Halogen component** — initialState, render,
+-- |    and the eval spec.
+-- | 2. **Action dispatch** — routes each `Action` to
+-- |    the appropriate handler module:
+-- |    - `Action.Repos`    — repo/issue/PR/workflow
+-- |    - `Action.Projects` — project board CRUD
+-- |    - `Action.Agent`    — terminal/session mgmt
+-- |    - Inline handlers   — trivial one-liners
+-- |      (SetToken, ToggleTheme, etc.)
+-- | 3. **Initialization** — loads persisted state from
+-- |    localStorage, restores view, and kicks off
+-- |    the first data fetch.
+-- |
+-- | If you're looking for the actual handler logic,
+-- | see the `Action.*` modules. If you're looking for
+-- | the view layer, see `View` and `View.*`.
 module Main where
 
 import Prelude
 
-import Data.Argonaut.Core
-  ( Json, jsonEmptyObject, stringify, toArray, toObject
+import Action.Agent
+  ( handleDetachAgent
+  , handleLaunchAgent
+  , handleRefreshAgentSessions
+  , handleSetAgentServer
+  , handleStopAgent
+  , handleToggleSessionFilter
   )
-import Data.Argonaut.Decode.Combinators ((.:))
-import Data.Argonaut.Encode.Class (encodeJson)
-import Data.Argonaut.Encode.Combinators ((:=), (~>))
-import Data.Argonaut.Parser (jsonParser)
-import Data.Array
-  ( filter, index, length, nubByEq, null
+import Action.Common
+  ( persistView
+  , toggleSet
   )
-import Data.Array as Array
-import Data.Either (Either(..), hush)
-import Data.HTTP.Method (Method(..))
+import Action.Projects
+  ( handleDeleteItem
+  , handleExpandProject
+  , handleRefreshProjectItem
+  , handleRefreshProjectItems
+  , handleRefreshProjects
+  , handleSetEditItemTitle
+  , handleSetItemStatus
+  , handleSetNewItemTitle
+  , handleSetRenameProjectTitle
+  , handleStartEditItem
+  , handleStartRenameProject
+  , handleSubmitEditItem
+  , handleSubmitNewItem
+  , handleSubmitRenameProject
+  , handleToggleProjectRepoFilter
+  )
+import Action.Repos
+  ( handleDragDrop
+  , handleDragStart
+  , handleHideItem
+  , handleRefreshIssue
+  , handleRefreshIssues
+  , handleRefreshPR
+  , handleRefreshPRs
+  , handleRefreshRepo
+  , handleRefreshWorkflows
+  , handleRemoveRepo
+  , handleSubmitAddRepo
+  , handleToggleExpand
+  , handleToggleItem
+  , handleWorkflowNextSha
+  , handleWorkflowPrevSha
+  )
+import Data.Array (null)
 import Data.Map as Map
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..))
 import Data.Set as Set
-import Data.String
-  ( Pattern(..)
-  , Replacement(..)
-  , indexOf
-  , replace
-  , replaceAll
-  , split
-  , toLower
-  )
-import Data.Traversable (traverse_)
-import Data.Tuple (Tuple(..))
 import Effect (Effect)
-import Effect.Aff (Aff, try)
+import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
-import Effect.Exception (message)
-import Fetch (fetch)
-import GitHub
-  ( fetchCheckRuns
-  , fetchCommitPRs
-  , fetchCommitStatuses
-  , fetchIssue
-  , fetchProjectItems
-  , fetchRepo
-  , fetchRepoIssues
-  , fetchRepoPRs
-  , fetchUserProjects
-  , fetchWorkflowJobs
-  , fetchWorkflowRuns
-  , updateItemStatus
-  , addDraftItem
-  , updateDraftItem
-  , deleteProjectItem
-  , renameProject
-  )
+import FFI.Clipboard (copyToClipboard)
+import FFI.Storage as FFIStorage
+import FFI.Theme (setBodyTheme)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
-import FFI.Clipboard (copyToClipboard)
-import FFI.Terminal (attachTerminal, destroyTerminal)
-import FFI.Dialog (confirmDialog)
-import FFI.Storage as FFIStorage
-import FFI.Theme (setBodyTheme)
-import Refresh (doRefresh, refreshSinglePR)
-import RepoUtils
-  ( applyFilter
-  , moveItem
-  , orderRepos
-  , parseRepoName
-  , upsertRepo
-  )
+import Refresh (doRefresh)
+import RepoUtils (applyFilter)
 import Storage
   ( clearAll
   , loadAgentServer
   , loadRepoList
   , loadToken
   , loadViewState
-  , saveAgentServer
-  , saveRepoList
   , saveToken
-  , saveViewState
   )
-import Types
-  ( Issue(..)
-  , Page(..)
-  , Project(..)
-  , ProjectItem(..)
-  , PullRequest(..)
-  , Repo(..)
-  , WorkflowJob(..)
-  , WorkflowRun(..)
-  )
+import Types (Page(..))
 import View (Action(..), State, renderDashboard, renderTokenForm)
 import Web.HTML (window)
 import Web.HTML.Window (confirm)
@@ -110,6 +114,9 @@ rootComponent =
         }
     }
 
+-- | Initial application state with all fields
+-- | set to their empty/default values. Persisted
+-- | state is loaded in the Initialize handler.
 initialState :: State
 initialState =
   { token: ""
@@ -165,32 +172,26 @@ render state =
   else
     renderTokenForm state
 
--- | Save current view state to localStorage.
-persistView
-  :: forall o
-   . H.HalogenM State Action () o Aff Unit
-persistView = do
-  st <- H.get
-  liftEffect $ saveViewState
-    { currentPage: st.currentPage
-    , expanded: st.expanded
-    , expandedProject: st.expandedProject
-    , expandedItems: st.expandedItems
-    , filterText: st.filterText
-    , hiddenItems: st.hiddenItems
-    , darkTheme: st.darkTheme
-    , issueLabelFilters: st.issueLabelFilters
-    , prLabelFilters: st.prLabelFilters
-    , workflowStatusFilters:
-        st.workflowStatusFilters
-    , projectRepoFilters: st.projectRepoFilters
-    }
+------------------------------------------------------------
+-- Action dispatcher
+------------------------------------------------------------
 
+-- | Route each action to its handler module.
+-- |
+-- | Cross-module calls (e.g. a project handler
+-- | needing to refresh agent sessions) go through
+-- | `handleAction` itself, passed as a `Dispatch`
+-- | callback.
 handleAction
   :: forall o
    . Action
   -> H.HalogenM State Action () o Aff Unit
 handleAction = case _ of
+
+  ------------------------------------------------
+  -- Initialization & auth
+  ------------------------------------------------
+
   Initialize -> do
     saved <- liftEffect loadToken
     repoList <- liftEffect loadRepoList
@@ -228,8 +229,10 @@ handleAction = case _ of
               Just projId ->
                 handleAction
                   (RefreshProjectItems projId)
+
   SetToken tok ->
     H.modify_ _ { token = tok }
+
   SubmitToken -> do
     st <- H.get
     if st.token == "" then
@@ -243,511 +246,100 @@ handleAction = case _ of
         , loading = true
         }
       doRefresh st.token
-  RefreshRepo fullName -> do
-    st <- H.get
-    result <- H.liftAff
-      (fetchRepo st.token fullName)
-    case result of
-      Left _ -> pure unit
-      Right repo ->
-        H.modify_ _
-          { repos = upsertRepo repo st.repos }
-  RefreshIssues -> do
-    st <- H.get
-    case st.expanded of
-      Nothing -> pure unit
-      Just fullName -> do
-        H.modify_ _ { issuesLoading = true }
-        result <- H.liftAff
-          (fetchRepoIssues st.token fullName)
-        st2 <- H.get
-        when (st2.expanded == Just fullName) do
-          let
-            issues = case result of
-              Right is -> is
-              Left _ -> []
-          case st2.details of
-            Nothing ->
-              H.modify_ _
-                { details = Just
-                    { issues
-                    , pullRequests: []
-                    , issueCount: length issues
-                    , prCount: 0
-                    , prChecks: Map.empty
-                    , workflowRuns: []
-                    , workflowCount: 0
-                    , workflowJobs: Map.empty
-                    , workflowShaIndex: 0
-                    , workflowShaPRs: Map.empty
-                    }
-                }
-            Just detail ->
-              H.modify_ _
-                { details = Just detail
-                    { issues = issues
-                    , issueCount = length issues
-                    }
-                }
-        H.modify_ _ { issuesLoading = false }
-  RefreshIssue issueNum -> do
-    st <- H.get
-    case st.expanded of
-      Nothing -> pure unit
-      Just fullName -> do
-        result <- H.liftAff
-          (fetchIssue st.token fullName issueNum)
-        st2 <- H.get
-        when (st2.expanded == Just fullName) do
-          case result of
-            Left _ -> pure unit
-            Right issue ->
-              case st2.details of
-                Nothing ->
-                  H.modify_ _
-                    { details = Just
-                        { issues: [ issue ]
-                        , pullRequests: []
-                        , issueCount: 1
-                        , prCount: 0
-                        , prChecks: Map.empty
-                        , workflowRuns: []
-                        , workflowCount: 0
-                        , workflowJobs: Map.empty
-                        , workflowShaIndex: 0
-                        , workflowShaPRs: Map.empty
-                        }
-                    }
-                Just detail ->
-                  let
-                    updated = map
-                      ( \(Issue i) ->
-                          if i.number == issueNum
-                            then issue
-                          else Issue i
-                      )
-                      detail.issues
-                  in
-                    H.modify_ _
-                      { details = Just detail
-                          { issues = updated }
-                      }
-  RefreshPRs -> do
-    st <- H.get
-    case st.expanded of
-      Nothing -> pure unit
-      Just fullName -> do
-        H.modify_ _ { prsLoading = true }
-        prsResult <- H.liftAff
-          (fetchRepoPRs st.token fullName)
-        st2 <- H.get
-        when (st2.expanded == Just fullName) do
-          let
-            prs = case prsResult of
-              Right ps -> ps
-              Left _ -> []
-          case st2.details of
-            Nothing ->
-              H.modify_ _
-                { details = Just
-                    { issues: []
-                    , pullRequests: []
-                    , issueCount: 0
-                    , prCount: length prs
-                    , prChecks: Map.empty
-                    , workflowRuns: []
-                    , workflowCount: 0
-                    , workflowJobs: Map.empty
-                    , workflowShaIndex: 0
-                    , workflowShaPRs: Map.empty
-                    }
-                }
-            Just detail ->
-              H.modify_ _
-                { details = Just detail
-                    { pullRequests = []
-                    , prCount = length prs
-                    , prChecks = Map.empty
-                    }
-                }
-          traverse_
-            ( \pr@(PullRequest p) -> do
-                st3 <- H.get
-                when
-                  (st3.expanded == Just fullName)
-                  do
-                    let
-                      isVisible = not
-                        ( Set.member p.htmlUrl
-                            st3.hiddenItems
-                        )
-                    checks <-
-                      if isVisible then do
-                        cr <- H.liftAff $
-                          fetchCheckRuns st3.token
-                            fullName
-                            p.headSha
-                        cs <- H.liftAff $
-                          fetchCommitStatuses
-                            st3.token
-                            fullName
-                            p.headSha
-                        let
-                          runs = case cr of
-                            Right r -> r
-                            Left _ -> []
-                          statuses = case cs of
-                            Right s -> s
-                            Left _ -> []
-                        pure $ Just $ Tuple
-                          p.number
-                          (runs <> statuses)
-                      else pure Nothing
-                    st4 <- H.get
-                    case st4.details of
-                      Nothing -> pure unit
-                      Just detail ->
-                        H.modify_ _
-                          { details = Just
-                              detail
-                                { pullRequests =
-                                    Array.snoc
-                                      detail.pullRequests
-                                      pr
-                                , prChecks =
-                                    case checks of
-                                      Nothing ->
-                                        detail.prChecks
-                                      Just
-                                        ( Tuple n
-                                            c
-                                        ) ->
-                                        Map.insert n
-                                          c
-                                          detail.prChecks
-                                }
-                          }
-            )
-            prs
-        H.modify_ _ { prsLoading = false }
-  RefreshPR prNum -> do
-    st <- H.get
-    case st.expanded of
-      Nothing -> pure unit
-      Just fullName ->
-        refreshSinglePR st.token fullName prNum
-  RefreshWorkflows -> do
-    st <- H.get
-    case st.expanded of
-      Nothing -> pure unit
-      Just fullName -> do
-        let
-          branch = "master"
-        H.modify_ _ { workflowsLoading = true }
-        result <- H.liftAff
-          ( fetchWorkflowRuns st.token fullName
-              branch
-          )
-        st2 <- H.get
-        when (st2.expanded == Just fullName) do
-          let
-            runs = case result of
-              Right rs -> rs
-              Left _ -> []
-            shas = extractShas runs
-            shaCount = length shas
-          case st2.details of
-            Nothing ->
-              H.modify_ _
-                { details = Just
-                    { issues: []
-                    , pullRequests: []
-                    , issueCount: 0
-                    , prCount: 0
-                    , prChecks: Map.empty
-                    , workflowRuns: runs
-                    , workflowCount: shaCount
-                    , workflowJobs: Map.empty
-                    , workflowShaIndex: 0
-                    , workflowShaPRs: Map.empty
-                    }
-                }
-            Just detail ->
-              H.modify_ _
-                { details = Just detail
-                    { workflowRuns = runs
-                    , workflowCount = shaCount
-                    , workflowJobs = Map.empty
-                    , workflowShaIndex = 0
-                    , workflowShaPRs = Map.empty
-                    }
-                }
-          loadWorkflowShaDetails fullName
-        H.modify_ _ { workflowsLoading = false }
-  WorkflowPrevSha -> do
-    st <- H.get
-    case st.details of
-      Nothing -> pure unit
-      Just detail -> do
-        let
-          idx = detail.workflowShaIndex
-        when (idx > 0) do
-          H.modify_ _
-            { details = Just detail
-                { workflowShaIndex = idx - 1
-                , workflowJobs = Map.empty
-                }
-            , workflowStatusFilters = Set.empty
-            }
-          case st.expanded of
-            Nothing -> pure unit
-            Just fullName ->
-              loadWorkflowShaDetails fullName
-  WorkflowNextSha -> do
-    st <- H.get
-    case st.details of
-      Nothing -> pure unit
-      Just detail -> do
-        let
-          idx = detail.workflowShaIndex
-          shas = extractShas detail.workflowRuns
-          maxIdx = length shas - 1
-        when (idx < maxIdx) do
-          H.modify_ _
-            { details = Just detail
-                { workflowShaIndex = idx + 1
-                , workflowJobs = Map.empty
-                }
-            , workflowStatusFilters = Set.empty
-            }
-          case st.expanded of
-            Nothing -> pure unit
-            Just fullName ->
-              loadWorkflowShaDetails fullName
-  ToggleExpand fullName -> do
-    st <- H.get
-    if st.expanded == Just fullName then do
-      H.modify_ _
-        { expanded = Nothing
-        }
-      persistView
-    else do
-      let
-        switching = st.expanded /= Nothing
-          && st.expanded /= Just fullName
-      H.modify_ _
-        { expanded = Just fullName
-        , detailLoading = false
-        , details =
-            if switching then Nothing
-            else st.details
-        , expandedItems =
-            if switching then Set.empty
-            else st.expandedItems
-        }
-    persistView
-  ToggleItem key -> do
-    st <- H.get
-    let
-      opening = not
-        (Set.member key st.expandedItems)
-    H.modify_ _
-      { expandedItems =
-          if opening then
-            Set.insert key st.expandedItems
-          else
-            Set.delete key st.expandedItems
-      }
-    -- When collapsing an item that has an active
-    -- terminal, detach it via terminalKeys lookup.
-    when (not opening) do
-      case Map.lookup key st.terminalKeys of
-        Nothing -> pure unit
-        Just itemKey -> do
-          liftEffect $ destroyTerminal
-            (termElementId itemKey)
-          H.modify_ \s -> s
-            { launchedItems = Set.delete
-                itemKey
-                s.launchedItems
-            , terminalKeys = Map.delete key
-                s.terminalKeys
-            , terminalUrls = Map.delete
-                itemKey
-                s.terminalUrls
-            }
-    persistView
-    when opening do
-      let
-        empty = case st.details of
-          Nothing -> true
-          Just d
-            | key == "section-issues" ->
-                null d.issues
-            | key == "section-prs" ->
-                null d.pullRequests
-            | key == "section-workflows" ->
-                null d.workflowRuns
-            | otherwise -> false
-      when empty case key of
-        "section-issues" ->
-          handleAction RefreshIssues
-        "section-prs" ->
-          handleAction RefreshPRs
-        "section-workflows" ->
-          handleAction RefreshWorkflows
-        _ -> pure unit
+
+  ------------------------------------------------
+  -- Repo actions (delegated)
+  ------------------------------------------------
+
+  RefreshRepo fullName ->
+    handleRefreshRepo fullName
+  RefreshIssues ->
+    handleRefreshIssues handleAction
+  RefreshIssue n ->
+    handleRefreshIssue n
+  RefreshPRs ->
+    handleRefreshPRs handleAction
+  RefreshPR n ->
+    handleRefreshPR n
+  RefreshWorkflows ->
+    handleRefreshWorkflows handleAction
+  WorkflowPrevSha ->
+    handleWorkflowPrevSha
+  WorkflowNextSha ->
+    handleWorkflowNextSha
+  ToggleExpand fullName ->
+    handleToggleExpand fullName
+  ToggleItem key ->
+    handleToggleItem handleAction key
+  DragStart fullName ->
+    handleDragStart fullName
+  DragDrop targetName ->
+    handleDragDrop targetName
+  SubmitAddRepo ->
+    handleSubmitAddRepo
+  RemoveRepo fullName ->
+    handleRemoveRepo fullName
+  HideItem url ->
+    handleHideItem url
+
+  ------------------------------------------------
+  -- Inline one-liners (not worth a module)
+  ------------------------------------------------
+
   SetFilter txt -> do
     H.modify_ _ { filterText = txt }
     persistView
-  DragStart fullName ->
-    H.modify_ _ { dragging = Just fullName }
-  DragDrop targetName -> do
-    st <- H.get
-    case st.dragging of
-      Nothing -> pure unit
-      Just srcName -> do
-        H.modify_ _ { dragging = Nothing }
-        when (srcName /= targetName) do
-          let
-            newList = moveItem srcName targetName
-              st.repoList
-            newRepos = orderRepos newList st.repos
-          H.modify_ _
-            { repoList = newList
-            , repos = newRepos
-            }
-          liftEffect $ saveRepoList newList
+
   ToggleAddRepo -> do
     st <- H.get
     H.modify_ _
       { showAddRepo = not st.showAddRepo
       , addRepoInput = ""
       }
+
   SetAddRepoInput txt ->
     H.modify_ _ { addRepoInput = txt }
-  SubmitAddRepo -> do
-    st <- H.get
-    case parseRepoName st.addRepoInput of
-      Nothing ->
-        H.modify_ _
-          { error = Just "Enter a GitHub URL" }
-      Just name -> do
-        let
-          alreadyExists = Array.any
-            (\(Repo r) -> r.fullName == name)
-            st.repos
-        if alreadyExists then
-          H.modify_ _
-            { error = Just
-                (name <> " is already in the list")
-            , showAddRepo = false
-            , addRepoInput = ""
-            }
-        else do
-          result <- H.liftAff
-            (fetchRepo st.token name)
-          case result of
-            Left err ->
-              H.modify_ _
-                { error = Just err }
-            Right repo -> do
-              st2 <- H.get
-              let
-                newList = [ name ] <> st2.repoList
-              H.modify_ _
-                { repos = [ repo ] <> st2.repos
-                , repoList = newList
-                , showAddRepo = false
-                , addRepoInput = ""
-                , error = Nothing
-                }
-              liftEffect $ saveRepoList newList
-  RemoveRepo fullName -> do
-    ok <- liftEffect do
-      w <- window
-      confirm ("Remove " <> fullName <> "?") w
-    when ok do
-      st <- H.get
-      let
-        newList = filter (_ /= fullName) st.repoList
-        newRepos = filter
-          (\(Repo r) -> r.fullName /= fullName)
-          st.repos
-      H.modify_ _
-        { repoList = newList
-        , repos = newRepos
-        , expanded =
-            if st.expanded == Just fullName then
-              Nothing
-            else st.expanded
-        , details =
-            if st.expanded == Just fullName then
-              Nothing
-            else st.details
-        }
-      liftEffect $ saveRepoList newList
-  HideItem url -> do
-    st <- H.get
-    let
-      newHidden =
-        if Set.member url st.hiddenItems then
-          Set.delete url st.hiddenItems
-        else Set.insert url st.hiddenItems
-    H.modify_ _ { hiddenItems = newHidden }
-    persistView
+
   CopyText text ->
     liftEffect $ copyToClipboard text
+
   ToggleIssueLabelFilter label -> do
     st <- H.get
-    let
-      newFilters =
-        if Set.member label
-          st.issueLabelFilters
-        then
-          Set.delete label
-            st.issueLabelFilters
-        else
-          Set.insert label
-            st.issueLabelFilters
-    H.modify_ _ { issueLabelFilters = newFilters }
+    H.modify_ _
+      { issueLabelFilters =
+          toggleSet label st.issueLabelFilters
+      }
     persistView
+
   TogglePRLabelFilter label -> do
     st <- H.get
-    let
-      newFilters =
-        if Set.member label st.prLabelFilters
-        then
-          Set.delete label st.prLabelFilters
-        else
-          Set.insert label st.prLabelFilters
-    H.modify_ _ { prLabelFilters = newFilters }
+    H.modify_ _
+      { prLabelFilters =
+          toggleSet label st.prLabelFilters
+      }
     persistView
+
   ToggleWorkflowStatusFilter status -> do
     st <- H.get
-    let
-      newFilters =
-        if Set.member status
-          st.workflowStatusFilters
-        then
-          Set.delete status
-            st.workflowStatusFilters
-        else
-          Set.insert status
-            st.workflowStatusFilters
     H.modify_ _
-      { workflowStatusFilters = newFilters }
+      { workflowStatusFilters =
+          toggleSet status st.workflowStatusFilters
+      }
     persistView
+
   ToggleTheme -> do
     st <- H.get
     let dark = not st.darkTheme
     H.modify_ _ { darkTheme = dark }
     liftEffect $ setBodyTheme dark
     persistView
+
   ExportStorage ->
     liftEffect FFIStorage.exportStorage
+
   ImportStorage ->
     liftEffect FFIStorage.importStorage
+
   ResetAll -> do
     ok <- liftEffect do
       w <- window
@@ -773,6 +365,7 @@ handleAction = case _ of
         , expandedProject = Nothing
         , projectItems = Map.empty
         }
+
   SwitchPage page -> do
     H.modify_ _ { currentPage = page }
     persistView
@@ -785,609 +378,58 @@ handleAction = case _ of
       ReposPage ->
         when (null st.repos) do
           doRefresh st.token
-  RefreshProjects -> do
-    st <- H.get
-    H.modify_ _ { projectsLoading = true }
-    result <- H.liftAff
-      (fetchUserProjects st.token)
-    case result of
-      Left err ->
-        H.modify_ _
-          { error = Just (friendlyProjectError err)
-          , projectsLoading = false
-          }
-      Right projs -> do
-        H.modify_ _
-          { projects = projs
-          , projectsLoading = false
-          , error = Nothing
-          }
-        handleAction RefreshAgentSessions
-  ExpandProject projectId -> do
-    st <- H.get
-    let
-      newExp =
-        if st.expandedProject == Just projectId then
-          Nothing
-        else Just projectId
-    H.modify_ _
-      { expandedProject = newExp
-      , expandedItems =
-          if newExp == Nothing then
-            st.expandedItems
-          else Set.empty
-      }
-    persistView
-    when
-      (not (Map.member projectId st.projectItems))
-      do
-        handleAction
-          (RefreshProjectItems projectId)
-  RefreshProjectItems projectId -> do
-    handleAction RefreshAgentSessions
-    st <- H.get
-    let isFirstLoad =
-          not (Map.member projectId st.projectItems)
-    when isFirstLoad
-      (H.modify_ _ { projectItemsLoading = true })
-    result <- H.liftAff
-      (fetchProjectItems st.token projectId)
-    case result of
-      Left err ->
-        H.modify_ _
-          { error = Just err
-          , projectItemsLoading = false
-          }
-      Right res -> do
-        H.modify_ _
-          { projectItems = Map.insert
-              projectId
-              res.items
-              st.projectItems
-          , projectItemsLoading = false
-          , error = Nothing
-          }
-        case res.statusField of
-          Just sf ->
-            H.modify_ _
-              { projectStatusFields = Map.insert
-                  projectId
-                  sf
-                  st.projectStatusFields
-              }
-          Nothing -> pure unit
-  RefreshProjectItem projectId repoName itemNum -> do
-    st <- H.get
-    result <- H.liftAff
-      (fetchIssue st.token repoName itemNum)
-    case result of
-      Left _ -> pure unit
-      Right (Issue iss) ->
-        case Map.lookup projectId
-          st.projectItems of
-          Nothing -> pure unit
-          Just items ->
-            let
-              updated = map
-                ( \(ProjectItem pi) ->
-                    if pi.repoName == Just repoName
-                      && pi.number == Just itemNum
-                    then ProjectItem pi
-                      { title = iss.title
-                      , body = iss.body
-                      }
-                    else ProjectItem pi
-                )
-                items
-            in
-              H.modify_ _
-                { projectItems = Map.insert
-                    projectId
-                    updated
-                    st.projectItems
-                }
-  ToggleProjectRepoFilter repo -> do
-    st <- H.get
-    let filters =
-          if Set.member repo st.projectRepoFilters
-          then Set.delete repo st.projectRepoFilters
-          else Set.insert repo st.projectRepoFilters
-    H.modify_ _ { projectRepoFilters = filters }
-    persistView
+
+  ------------------------------------------------
+  -- Project actions (delegated)
+  ------------------------------------------------
+
+  RefreshProjects ->
+    handleRefreshProjects handleAction
+  ExpandProject projectId ->
+    handleExpandProject handleAction projectId
+  RefreshProjectItems projectId ->
+    handleRefreshProjectItems
+      handleAction projectId
+  RefreshProjectItem pid repo num ->
+    handleRefreshProjectItem pid repo num
+  ToggleProjectRepoFilter repo ->
+    handleToggleProjectRepoFilter repo
+  SetItemStatus pid iid status ->
+    handleSetItemStatus pid iid status
   SetNewItemTitle t ->
-    H.modify_ _ { newItemTitle = t }
-  SubmitNewItem projectId -> do
-    st <- H.get
-    let title = st.newItemTitle
-    when (title /= "") do
-      H.modify_ _ { newItemTitle = "" }
-      result <- H.liftAff $
-        addDraftItem st.token projectId title
-      case result of
-        Left err ->
-          H.modify_ _ { error = Just err }
-        Right _ ->
-          handleAction
-            (RefreshProjectItems projectId)
-  StartEditItem itemId currentTitle ->
-    H.modify_ _
-      { editingItem = Just itemId
-      , editItemTitle = currentTitle
-      }
+    handleSetNewItemTitle t
+  SubmitNewItem projectId ->
+    handleSubmitNewItem handleAction projectId
+  StartEditItem itemId title ->
+    handleStartEditItem itemId title
   SetEditItemTitle t ->
-    H.modify_ _ { editItemTitle = t }
-  SubmitEditItem projectId draftId newTitle -> do
-    st <- H.get
-    H.modify_ _
-      { editingItem = Nothing
-      , editItemTitle = ""
-      }
-    when (newTitle /= "") do
-      -- optimistic update
-      case Map.lookup projectId st.projectItems of
-        Nothing -> pure unit
-        Just items ->
-          let
-            updated = map
-              ( \(ProjectItem pi) ->
-                  if pi.draftId == Just draftId then
-                    ProjectItem pi
-                      { title = newTitle }
-                  else ProjectItem pi
-              )
-              items
-          in
-            H.modify_ _
-              { projectItems = Map.insert
-                  projectId
-                  updated
-                  st.projectItems
-              }
-      result <- H.liftAff $
-        updateDraftItem st.token draftId newTitle
-      case result of
-        Left err ->
-          H.modify_ _ { error = Just err }
-        Right _ -> pure unit
-  DeleteItem projectId itemId -> do
-    confirmed <- liftEffect $
-      confirmDialog "Delete this item?"
-    when confirmed do
-      st <- H.get
-      -- optimistic remove
-      case Map.lookup projectId st.projectItems of
-        Nothing -> pure unit
-        Just items ->
-          let
-            updated = filter
-              ( \(ProjectItem pi) ->
-                  pi.itemId /= itemId
-              )
-              items
-          in
-            H.modify_ _
-              { projectItems = Map.insert
-                  projectId
-                  updated
-                  st.projectItems
-              }
-      result <- H.liftAff $
-        deleteProjectItem st.token projectId itemId
-      case result of
-        Left err ->
-          H.modify_ _ { error = Just err }
-        Right _ -> pure unit
-  StartRenameProject projectId currentTitle ->
-    H.modify_ _
-      { editingProject = Just projectId
-      , editProjectTitle = currentTitle
-      }
+    handleSetEditItemTitle t
+  SubmitEditItem pid did title ->
+    handleSubmitEditItem pid did title
+  DeleteItem pid iid ->
+    handleDeleteItem pid iid
+  StartRenameProject pid title ->
+    handleStartRenameProject pid title
   SetRenameProjectTitle t ->
-    H.modify_ _ { editProjectTitle = t }
-  SubmitRenameProject projectId newTitle -> do
-    st <- H.get
-    H.modify_ _
-      { editingProject = Nothing
-      , editProjectTitle = ""
-      }
-    when (newTitle /= "") do
-      let
-        updated = map
-          ( \(Project proj) ->
-              if proj.id == projectId then
-                Project proj { title = newTitle }
-              else Project proj
-          )
-          st.projects
-      H.modify_ _ { projects = updated }
-      result <- H.liftAff $
-        renameProject st.token projectId newTitle
-      case result of
-        Left err ->
-          H.modify_ _ { error = Just err }
-        Right _ -> pure unit
-  SetItemStatus projectId itemId newStatus -> do
-    st <- H.get
-    case Map.lookup projectId
-      st.projectStatusFields of
-      Nothing -> pure unit
-      Just sf ->
-        case Array.find
-          (\o -> o.name == newStatus)
-          sf.options of
-          Nothing -> pure unit
-          Just opt -> do
-            -- optimistic update
-            case Map.lookup projectId
-              st.projectItems of
-              Nothing -> pure unit
-              Just items ->
-                let
-                  updated = map
-                    ( \(ProjectItem pi) ->
-                        if pi.itemId == itemId then
-                          ProjectItem pi
-                            { status = Just newStatus
-                            }
-                        else ProjectItem pi
-                    )
-                    items
-                in
-                  H.modify_ _
-                    { projectItems = Map.insert
-                        projectId
-                        updated
-                        st.projectItems
-                    }
-            result <- H.liftAff $
-              updateItemStatus st.token projectId
-                itemId
-                sf.fieldId
-                opt.optionId
-            case result of
-              Left err ->
-                H.modify_ _
-                  { error = Just err }
-              Right _ -> pure unit
-  LaunchAgent toggleKey fullName issueNum -> do
-    st <- H.get
-    let
-      parts = split (Pattern "/") fullName
-      owner = case index parts 0 of
-        Just o -> o
-        Nothing -> ""
-      name = case index parts 1 of
-        Just n -> n
-        Nothing -> ""
-      server = st.agentServer
-      itemKey = fullName <> "#"
-        <> show issueNum
-      elemId = termElementId itemKey
-    if server == "" then
-      H.modify_ _
-        { error = Just
-            "Set agent server URL first"
-        }
-    else do
-      let
-        body = encodeJson
-          ( "repo"
-              := ( "owner" := owner
-                    ~> "name" := name
-                    ~> jsonEmptyObject
-                 )
-              ~> "issue" := issueNum
-              ~> jsonEmptyObject
-          )
-      result <- H.liftAff $ try do
-        resp <- fetch
-          (server <> "/sessions")
-          { method: POST
-          , headers:
-              { "Content-Type":
-                  "application/json"
-              }
-          , body: stringify body
-          }
-        resp.text
-      case result of
-        Left err ->
-          H.modify_ _
-            { error = Just (message err) }
-        Right _ -> do
-          let
-            wsProto =
-              if indexOf (Pattern "https")
-                server == Just 0
-              then "wss"
-              else "ws"
-            host =
-              replace (Pattern "https://")
-                (Replacement "")
-                $ replace
-                    (Pattern "http://")
-                    (Replacement "")
-                    server
-            wsUrl = wsProto <> "://" <> host
-              <> "/sessions/"
-              <> name
-              <> "-"
-              <> show issueNum
-              <> "/terminal"
-          -- Expand the item so the terminal
-          -- div appears in the DOM
-          H.modify_ \s -> s
-            { error = Nothing
-            , launchedItems =
-                Set.insert itemKey
-                  s.launchedItems
-            , expandedItems =
-                Set.insert toggleKey
-                  s.expandedItems
-            , terminalKeys =
-                Map.insert toggleKey itemKey
-                  s.terminalKeys
-            , terminalUrls =
-                Map.insert itemKey wsUrl
-                  s.terminalUrls
-            }
-          -- Attach all active terminals (re-attach
-          -- any that lost their xterm instance due
-          -- to virtual DOM re-render).
-          st2 <- H.get
-          liftEffect $ reattachTerminals st2
-          handleAction RefreshAgentSessions
-  DetachAgent fullName issueNum -> do
-    let
-      itemKey = fullName <> "#"
-        <> show issueNum
-      elemId = termElementId itemKey
-    liftEffect $ destroyTerminal elemId
-    H.modify_ \s -> s
-      { launchedItems =
-          Set.delete itemKey s.launchedItems
-      , terminalUrls =
-          Map.delete itemKey s.terminalUrls
-      }
-  StopAgent fullName issueNum -> do
-    confirmed <- liftEffect $
-      confirmDialog "Stop this agent session?"
-    when confirmed do
-      st <- H.get
-      let
-        parts = split (Pattern "/") fullName
-        name = case index parts 1 of
-          Just n -> n
-          Nothing -> ""
-        server = st.agentServer
-        itemKey = fullName <> "#"
-          <> show issueNum
-        elemId = termElementId itemKey
-        sid = name <> "-" <> show issueNum
-      liftEffect $ destroyTerminal elemId
-      H.modify_ \s -> s
-        { launchedItems =
-            Set.delete itemKey s.launchedItems
-        , terminalUrls =
-            Map.delete itemKey s.terminalUrls
-        }
-      when (server /= "") do
-        result <- H.liftAff $ try do
-          resp <- fetch
-            ( server <> "/sessions/"
-                <> sid
-            )
-            { method: DELETE
-            , headers:
-                { "Content-Type":
-                    "application/json"
-                }
-            }
-          resp.text
-        case result of
-          Left err ->
-            H.modify_ _
-              { error = Just (message err) }
-          Right _ -> pure unit
-        handleAction RefreshAgentSessions
-  SetAgentServer url -> do
-    H.modify_ _ { agentServer = url }
-    liftEffect $ saveAgentServer url
-  RefreshAgentSessions -> do
-    st <- H.get
-    when (st.agentServer /= "") do
-      result <- H.liftAff $ try do
-        resp <- fetch
-          (st.agentServer <> "/sessions")
-          { method: GET }
-        resp.text
-      case result of
-        Left _ -> pure unit
-        Right txt -> case jsonParser txt of
-          Left _ -> pure unit
-          Right json ->
-            case toArray json of
-              Nothing -> pure unit
-              Just arr ->
-                let
-                  entries = arr >>= \sj ->
-                    case parseSession sj of
-                      Nothing -> []
-                      Just e -> [ e ]
-                in
-                  H.modify_ _
-                    { agentSessions =
-                        Map.fromFoldable entries
-                    }
+    handleSetRenameProjectTitle t
+  SubmitRenameProject pid title ->
+    handleSubmitRenameProject pid title
+
+  ------------------------------------------------
+  -- Agent actions (delegated)
+  ------------------------------------------------
+
+  LaunchAgent toggleKey fullName issueNum ->
+    handleLaunchAgent handleAction
+      toggleKey fullName issueNum
+  DetachAgent fullName issueNum ->
+    handleDetachAgent fullName issueNum
+  StopAgent fullName issueNum ->
+    handleStopAgent handleAction
+      fullName issueNum
+  SetAgentServer url ->
+    handleSetAgentServer url
+  RefreshAgentSessions ->
+    handleRefreshAgentSessions
   ToggleSessionFilter label ->
-    H.modify_ \s -> s
-      { sessionFilters =
-          if Set.member label s.sessionFilters then
-            Set.delete label s.sessionFilters
-          else Set.insert label s.sessionFilters
-      }
-
--- | Convert a launch key to a DOM element ID.
-termElementId :: String -> String
-termElementId key =
-  "term-"
-    <> replaceAll (Pattern "/") (Replacement "-")
-      (replaceAll (Pattern "#") (Replacement "-") key)
-
--- | Re-attach all active terminals. Called after
--- | state changes that may cause Halogen to
--- | recreate terminal container divs.
-reattachTerminals :: State -> Effect Unit
-reattachTerminals st =
-  traverse_
-    ( \itemKey ->
-        case Map.lookup itemKey st.terminalUrls of
-          Nothing -> pure unit
-          Just wsUrl ->
-            attachTerminal
-              (termElementId itemKey)
-              itemKey
-              wsUrl
-    )
-    (Set.toUnfoldable st.launchedItems :: Array String)
-
--- | Parse a single agent session JSON object into
--- | a (key, state) tuple.
-parseSession :: Json -> Maybe (Tuple String String)
-parseSession json = do
-  obj <- toObject json
-  repoJson <- hush (obj .: "repo")
-  repoObj <- toObject repoJson
-  owner <- hush (repoObj .: "owner") :: Maybe String
-  name <- hush (repoObj .: "name") :: Maybe String
-  issue <- hush (obj .: "issue") :: Maybe Int
-  let
-    state = fromMaybe "unknown"
-      (hush (obj .: "state") :: Maybe String)
-  Just $ Tuple
-    (owner <> "/" <> name <> "#" <> show issue)
-    state
-
--- | Extract unique SHAs from runs, preserving order.
-extractShas :: Array WorkflowRun -> Array String
-extractShas runs =
-  map (\(WorkflowRun r) -> r.headSha)
-    ( nubByEq
-        ( \(WorkflowRun a) (WorkflowRun b) ->
-            a.headSha == b.headSha
-        )
-        runs
-    )
-
--- | Load jobs and PR info for the currently selected SHA.
-loadWorkflowShaDetails
-  :: forall o
-   . String
-  -> H.HalogenM State Action () o Aff Unit
-loadWorkflowShaDetails fullName = do
-  st <- H.get
-  case st.details of
-    Nothing -> pure unit
-    Just detail -> do
-      let
-        shas = extractShas detail.workflowRuns
-        idx = detail.workflowShaIndex
-      case index shas idx of
-        Nothing -> pure unit
-        Just sha -> do
-          let
-            shaRuns = nubByEq
-              ( \(WorkflowRun a) (WorkflowRun b) ->
-                  a.name == b.name
-              )
-              ( filter
-                  ( \(WorkflowRun r) ->
-                      r.headSha == sha
-                  )
-                  detail.workflowRuns
-              )
-          -- Fetch PR for this SHA if not cached
-          when
-            ( not
-                ( Map.member sha
-                    detail.workflowShaPRs
-                )
-            )
-            do
-              prResult <- H.liftAff $
-                fetchCommitPRs st.token fullName sha
-              st2 <- H.get
-              case prResult of
-                Right (Just pr) ->
-                  case st2.details of
-                    Nothing -> pure unit
-                    Just d ->
-                      H.modify_ _
-                        { details = Just d
-                            { workflowShaPRs =
-                                Map.insert sha pr
-                                  d.workflowShaPRs
-                            }
-                        }
-                _ -> pure unit
-          -- Fetch jobs for non-success runs
-          traverse_
-            ( \(WorkflowRun wr) -> do
-                st3 <- H.get
-                when
-                  (st3.expanded == Just fullName)
-                  do
-                    jobsResult <- H.liftAff $
-                      fetchWorkflowJobs st3.token
-                        fullName
-                        wr.runId
-                    let
-                      nonSuccess =
-                        case jobsResult of
-                          Right js -> filter
-                            ( \(WorkflowJob j) ->
-                                j.conclusion
-                                  /= Just "success"
-                            )
-                            js
-                          Left _ -> []
-                    when (not (null nonSuccess)) do
-                      st4 <- H.get
-                      case st4.details of
-                        Nothing -> pure unit
-                        Just d ->
-                          H.modify_ _
-                            { details = Just d
-                                { workflowJobs =
-                                    Map.insert
-                                      wr.name
-                                      nonSuccess
-                                      d.workflowJobs
-                                }
-                            }
-            )
-            shaRuns
-
--- | Rewrite GraphQL project errors into a
--- | user-friendly hint when the token lacks
--- | the required `read:project` scope.
-friendlyProjectError :: String -> String
-friendlyProjectError err =
-  let
-    low = toLower err
-    scopeHint =
-      "Your token does not have the "
-        <> "project scope. Please create a "
-        <> "token with read:project (or "
-        <> "project) and update it in the "
-        <> "settings."
-  in
-    if
-      indexOf (Pattern "insufficient_scopes")
-        low
-        /= Nothing
-        || indexOf (Pattern "scope") low
-        /= Nothing
-        && indexOf (Pattern "project") low
-        /= Nothing then scopeHint
-    else err
+    handleToggleSessionFilter label
