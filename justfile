@@ -24,13 +24,11 @@ restart: bundle
     npx serve dist -p 10001
 
 test-playwright: bundle
-    npm install
-    npx playwright install chromium
+    npm install --silent
     npx playwright test
 
 test-auth: bundle
-    npm install
-    npx playwright install chromium
+    npm install --silent
     GH_DASHBOARD_TOKEN=$(gh auth token) npx playwright test
 
 clean:
