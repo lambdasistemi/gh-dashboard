@@ -24,6 +24,7 @@ restart: bundle
     npx serve dist -p 10001
 
 test-run:
+    npm install --silent
     npx playwright test
 
 test: bundle test-run
