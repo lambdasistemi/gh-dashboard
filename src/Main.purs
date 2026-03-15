@@ -87,6 +87,7 @@ import Refresh (doRefresh)
 import RepoUtils (applyFilter)
 import Storage
   ( clearAll
+  , clearToken
   , loadAgentServer
   , loadRepoList
   , loadToken
@@ -343,6 +344,17 @@ handleAction = case _ of
 
   ImportStorage ->
     liftEffect FFIStorage.importStorage
+
+  ResetToken -> do
+    ok <- liftEffect do
+      w <- window
+      confirm "Reset token?" w
+    when ok do
+      liftEffect clearToken
+      H.modify_ _
+        { token = ""
+        , hasToken = false
+        }
 
   ResetAll -> do
     ok <- liftEffect do
