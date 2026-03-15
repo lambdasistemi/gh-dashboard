@@ -1,16 +1,17 @@
 -- | Async refresh logic for repos and PRs.
 module Refresh
   ( doRefresh
+  , loadCachedRepos
   , refreshSinglePR
   ) where
 
 import Prelude
 
-import Data.Array (null, take)
+import Data.Array (catMaybes, null, take)
 import Data.Either (Either(..))
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
-import Data.Traversable (traverse_)
+import Data.Traversable (traverse, traverse_)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import GitHub
@@ -19,12 +20,33 @@ import GitHub
   , fetchPR
   , fetchRepo
   , fetchUserRepos
+  , cachedRepo
   )
 import Halogen as H
 import RepoUtils (orderRepos, upsertRepo)
 import Storage (saveRepoList)
 import Types (PullRequest(..), Repo(..))
 import View.Types (Action, State)
+
+-- | Load repos from cache without network requests.
+-- | Returns true if cached data was found.
+loadCachedRepos
+  :: forall o
+   . H.HalogenM State Action () o Aff Boolean
+loadCachedRepos = do
+  st <- H.get
+  if null st.repoList then pure false
+  else do
+    results <- H.liftAff $
+      traverse cachedRepo st.repoList
+    let repos = catMaybes results
+    if null repos then pure false
+    else do
+      H.modify_ _
+        { repos = orderRepos st.repoList repos
+        , loading = false
+        }
+      pure true
 
 -- | Fetch repos. If repoList is empty, seed from API.
 doRefresh

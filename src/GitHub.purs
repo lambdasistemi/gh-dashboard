@@ -30,11 +30,14 @@ import GitHub.Rest
   , fetchWorkflowRuns
   , fetchWorkflowJobs
   , fetchCommitPRs
+  , cachedRepo
   )
 import GitHub.GraphQL
   ( ghGraphQL
   , fetchUserProjects
   , fetchProjectItems
+  , cachedUserProjects
+  , cachedProjectItems
   , updateItemStatus
   , addDraftItem
   , updateDraftItem
