@@ -5,12 +5,17 @@
       url = "github:thomashoneyman/purescript-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    dev-assets-mkdocs = {
+      url = "github:paolino/dev-assets?dir=mkdocs";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
     {
       nixpkgs,
       purescript-overlay,
+      dev-assets-mkdocs,
       ...
     }:
     let
@@ -33,6 +38,9 @@
         in
         {
           default = pkgs.mkShell {
+            inputsFrom = [
+              dev-assets-mkdocs.devShells.${system}.default
+            ];
             buildInputs = [
               pkgs.purs
               pkgs.spago-unstable
