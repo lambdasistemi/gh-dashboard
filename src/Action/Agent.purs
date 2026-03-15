@@ -76,7 +76,7 @@ import FFI.Terminal (attachTerminal, destroyTerminal)
 import Fetch (fetch)
 import Halogen as H
 import Storage (saveAgentServer)
-import View.Types (Action(..), State)
+import View.Types (Action(..), State, ToastLevel(..))
 
 handleLaunchAgent
   :: forall o
@@ -127,10 +127,18 @@ handleLaunchAgent dispatch toggleKey fullName issueNum = do
         }
       resp.text
     case result of
-      Left err ->
+      Left err -> do
         H.modify_ _
           { error = Just (message err) }
+        dispatch
+          ( ShowToast ("Agent error: " <> message err)
+              ToastError
+          )
       Right _ -> do
+        dispatch
+          ( ShowToast "Agent session launched"
+              ToastInfo
+          )
         let
           wsProto =
             if
@@ -174,10 +182,11 @@ handleLaunchAgent dispatch toggleKey fullName issueNum = do
 
 handleDetachAgent
   :: forall o
-   . String
+   . Dispatch o
+  -> String
   -> Int
   -> HalogenAction o
-handleDetachAgent fullName issueNum = do
+handleDetachAgent dispatch fullName issueNum = do
   let
     itemKey = fullName <> "#"
       <> show issueNum
@@ -189,6 +198,8 @@ handleDetachAgent fullName issueNum = do
     , terminalUrls =
         Map.delete itemKey s.terminalUrls
     }
+  dispatch
+    (ShowToast "Agent detached" ToastInfo)
 
 handleStopAgent
   :: forall o
@@ -233,10 +244,16 @@ handleStopAgent dispatch fullName issueNum = do
           }
         resp.text
       case result of
-        Left err ->
+        Left err -> do
           H.modify_ _
             { error = Just (message err) }
-        Right _ -> pure unit
+          dispatch
+            ( ShowToast ("Stop failed: " <> message err)
+                ToastError
+            )
+        Right _ ->
+          dispatch
+            (ShowToast "Agent stopped" ToastInfo)
       dispatch RefreshAgentSessions
 
 handleSetAgentServer

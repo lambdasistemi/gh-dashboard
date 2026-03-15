@@ -16,7 +16,7 @@ import Halogen.HTML.Properties as HP
 import Types (Page(..), Repo)
 import View.Projects (renderProjects)
 import View.RepoTable (renderRepoTable)
-import View.Types (Action(..), State)
+import View.Types (Action(..), State, Toast, ToastLevel(..))
 
 -- | Token input form shown when no token is set.
 renderTokenForm
@@ -95,7 +95,8 @@ renderDashboard
   -> HH.HTML w Action
 renderDashboard state repos =
   HH.div_
-    [ renderToolbar state
+    [ renderToasts state.toasts
+    , renderToolbar state
     , case state.error of
         Just err ->
           HH.div
@@ -269,6 +270,38 @@ renderToolbar state =
 activeIf :: Boolean -> String
 activeIf true = " active"
 activeIf false = ""
+
+-- | Toast notification container (bottom-right).
+renderToasts
+  :: forall w. Array Toast -> HH.HTML w Action
+renderToasts toasts =
+  HH.div
+    [ HP.class_ (HH.ClassName "toast-container") ]
+    (map renderToast toasts)
+
+-- | A single toast notification with dismiss button.
+renderToast
+  :: forall w. Toast -> HH.HTML w Action
+renderToast t =
+  HH.div
+    [ HP.class_
+        ( HH.ClassName
+            ( "toast toast-"
+                <> case t.level of
+                  ToastInfo -> "info"
+                  ToastError -> "error"
+            )
+        )
+    ]
+    [ HH.span
+        [ HP.class_ (HH.ClassName "toast-msg") ]
+        [ HH.text t.message ]
+    , HH.button
+        [ HE.onClick \_ -> DismissToast t.id
+        , HP.class_ (HH.ClassName "toast-close")
+        ]
+        [ HH.text "\x2715" ]
+    ]
 
 -- | Rate limit display.
 renderRateLimit

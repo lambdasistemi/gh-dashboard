@@ -2,6 +2,8 @@
 module View.Types
   ( Action(..)
   , State
+  , Toast
+  , ToastLevel(..)
   ) where
 
 import Data.Maybe (Maybe)
@@ -16,6 +18,16 @@ import Types
   , RepoDetail
   , StatusField
   )
+
+-- | Toast notification severity.
+data ToastLevel = ToastInfo | ToastError
+
+-- | A toast notification with auto-dismiss.
+type Toast =
+  { id :: Int
+  , message :: String
+  , level :: ToastLevel
+  }
 
 -- | Actions emitted by the view.
 data Action
@@ -70,6 +82,8 @@ data Action
   | SetAgentServer String
   | RefreshAgentSessions
   | ToggleSessionFilter String
+  | ShowToast String ToastLevel
+  | DismissToast Int
 
 -- | Application state (referenced by view).
 type State =
@@ -117,4 +131,6 @@ type State =
   , agentSessions :: Map String String
   , agentWorktrees :: Set String
   , sessionFilters :: Set String
+  , toasts :: Array Toast
+  , nextToastId :: Int
   }
