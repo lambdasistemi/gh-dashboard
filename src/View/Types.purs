@@ -59,6 +59,7 @@ data Action
   | ToggleTheme
   | ExportStorage
   | ImportStorage
+  | ResetToken
   | ResetAll
   | SwitchPage Page
   | RefreshProjects

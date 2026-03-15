@@ -10,6 +10,7 @@ module Storage
   , defaultViewState
   , loadAgentServer
   , saveAgentServer
+  , clearToken
   , clearAll
   ) where
 
@@ -248,6 +249,12 @@ saveAgentServer url = do
 
 storageKeyCryptoKey :: String
 storageKeyCryptoKey = "gh-dashboard-crypto-key"
+
+clearToken :: Effect Unit
+clearToken = do
+  w <- window
+  s <- localStorage w
+  Storage.removeItem storageKeyToken s
 
 clearAll :: Effect Unit
 clearAll = do
