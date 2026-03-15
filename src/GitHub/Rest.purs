@@ -36,6 +36,7 @@ module GitHub.Rest
   , fetchWorkflowRuns
   , fetchWorkflowJobs
   , fetchCommitPRs
+  , cachedRepo
   ) where
 
 import Prelude
@@ -516,3 +517,19 @@ fetchCommitPRs token fullName sha = do
           { title: p.title
           , htmlUrl: p.html_url
           }
+
+-- | Look up a cached repo without hitting the API.
+cachedRepo
+  :: String -> Aff (Maybe Repo)
+cachedRepo fullName = do
+  let
+    url = "https://api.github.com/repos/"
+      <> fullName
+  cached <- try (Cache.getCachedResponse url)
+  case cached of
+    Right (Just c) -> case jsonParser c.body of
+      Right json -> case decodeJson json of
+        Right repo -> pure $ Just repo
+        Left _ -> pure Nothing
+      Left _ -> pure Nothing
+    _ -> pure Nothing

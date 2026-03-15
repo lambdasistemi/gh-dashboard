@@ -83,7 +83,11 @@ import FFI.Theme (setBodyTheme)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
-import Refresh (doRefresh)
+import GitHub.GraphQL
+  ( cachedUserProjects
+  , cachedProjectItems
+  )
+import Refresh (doRefresh, loadCachedRepos)
 import RepoUtils (applyFilter)
 import Storage
   ( clearAll
@@ -226,8 +230,39 @@ handleAction = case _ of
           { token = tok, hasToken = true }
         handleAction RefreshAgentSessions
         case vs.currentPage of
-          ReposPage -> doRefresh tok
+          ReposPage -> do
+            -- Show cached repos instantly
+            _ <- loadCachedRepos
+            -- Then refresh from network
+            doRefresh tok
           ProjectsPage -> do
+            -- Show cached projects instantly
+            cachedProjs <- H.liftAff
+              cachedUserProjects
+            case cachedProjs of
+              Just projs ->
+                H.modify_ _
+                  { projects = projs
+                  , projectsLoading = false
+                  }
+              Nothing -> pure unit
+            case vs.expandedProject of
+              Nothing -> pure unit
+              Just projId -> do
+                cachedItems <- H.liftAff $
+                  cachedProjectItems projId
+                case cachedItems of
+                  Just res ->
+                    H.modify_ _
+                      { projectItems =
+                          Map.insert projId
+                            res.items
+                            Map.empty
+                      , projectItemsLoading =
+                          false
+                      }
+                  Nothing -> pure unit
+            -- Then refresh from network
             handleAction RefreshProjects
             case vs.expandedProject of
               Nothing -> pure unit

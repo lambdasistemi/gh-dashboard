@@ -26,6 +26,8 @@ module GitHub.GraphQL
   ( ghGraphQL
   , fetchUserProjects
   , fetchProjectItems
+  , cachedUserProjects
+  , cachedProjectItems
   , updateItemStatus
   , addDraftItem
   , updateDraftItem
@@ -57,6 +59,7 @@ import Data.HTTP.Method (Method(..))
 import Effect.Aff (Aff, try)
 import Effect.Exception (message)
 import Fetch (fetch)
+import FFI.Cache as Cache
 import Types
   ( Project(..)
   , ProjectItem(..)
@@ -79,13 +82,15 @@ ghGraphQL
   -> Json
   -> Aff (Either String Json)
 ghGraphQL token query variables = do
+  let
+    bodyJson = encodeJson
+      ( "query" := query
+          ~> "variables" := variables
+          ~> jsonEmptyObject
+      )
+    bodyStr = stringify bodyJson
+    cacheKey = "graphql:" <> bodyStr
   result <- try do
-    let
-      body = encodeJson
-        ( "query" := query
-            ~> "variables" := variables
-            ~> jsonEmptyObject
-        )
     resp <- fetch "https://api.github.com/graphql"
       { method: POST
       , headers:
@@ -94,7 +99,7 @@ ghGraphQL token query variables = do
           , "Authorization": "Bearer " <> token
           , "Content-Type": "application/json"
           }
-      , body: stringify body
+      , body: bodyStr
       }
     resp.text
   case result of
@@ -104,7 +109,34 @@ ghGraphQL token query variables = do
         pure $ Left ("JSON parse error: " <> e)
       Right json -> case extractGraphQLErrors json of
         Just err -> pure $ Left err
-        Nothing -> pure $ Right json
+        Nothing -> do
+          _ <- try
+            ( Cache.putCachedResponse
+                cacheKey
+                ""
+                txt
+            )
+          pure $ Right json
+
+-- | Look up a cached GraphQL response.
+getCachedGraphQL
+  :: String
+  -> Json
+  -> Aff (Maybe Json)
+getCachedGraphQL query variables = do
+  let
+    bodyJson = encodeJson
+      ( "query" := query
+          ~> "variables" := variables
+          ~> jsonEmptyObject
+      )
+    cacheKey = "graphql:" <> stringify bodyJson
+  cached <- try (Cache.getCachedResponse cacheKey)
+  case cached of
+    Right (Just c) -> case jsonParser c.body of
+      Right json -> pure $ Just json
+      Left _ -> pure Nothing
+    _ -> pure Nothing
 
 -- | Extract error messages from a GraphQL response.
 -- | Returns Nothing if no errors field or it's empty.
@@ -250,6 +282,44 @@ fetchProjectItems token projectId =
                   { items: all
                   , statusField: page.statusField
                   }
+
+-- | Return cached projects without hitting the API.
+cachedUserProjects
+  :: Aff (Maybe (Array Project))
+cachedUserProjects = do
+  mJson <- getCachedGraphQL projectsListQuery
+    jsonEmptyObject
+  pure $ mJson >>= \json ->
+    case navigateProjects json of
+      Right ps -> Just ps
+      Left _ -> Nothing
+
+-- | Return cached project items without hitting
+-- | the API. Only returns the first-page cache
+-- | (no cursor), which covers most projects.
+cachedProjectItems
+  :: String
+  -> Aff
+       ( Maybe
+           { items :: Array ProjectItem
+           , statusField :: Maybe StatusField
+           }
+       )
+cachedProjectItems projectId = do
+  let
+    vars = encodeJson
+      ( "nodeId" := projectId
+          ~> "cursor" := (Nothing :: Maybe String)
+          ~> jsonEmptyObject
+      )
+  mJson <- getCachedGraphQL projectItemsQuery vars
+  pure $ mJson >>= \json ->
+    case navigateProjectItems json of
+      Left _ -> Nothing
+      Right page -> Just
+        { items: page.items
+        , statusField: page.statusField
+        }
 
 ------------------------------------------------------------
 -- Mutations
