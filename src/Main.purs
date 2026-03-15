@@ -69,12 +69,12 @@ import Action.Repos
   , handleWorkflowNextSha
   , handleWorkflowPrevSha
   )
-import Data.Array (null)
+import Data.Array (null, filter)
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Set as Set
 import Effect (Effect)
-import Effect.Aff (Aff)
+import Effect.Aff (Aff, Milliseconds(..), delay)
 import Effect.Class (liftEffect)
 import FFI.Cache as FFI.Cache
 import FFI.Clipboard (copyToClipboard)
@@ -164,6 +164,8 @@ initialState =
   , agentSessions: Map.empty
   , agentWorktrees: Set.empty
   , sessionFilters: Set.empty
+  , toasts: []
+  , nextToastId: 0
   }
 
 render :: forall m. State -> H.ComponentHTML Action () m
@@ -426,7 +428,7 @@ handleAction = case _ of
     handleLaunchAgent handleAction
       toggleKey fullName issueNum
   DetachAgent fullName issueNum ->
-    handleDetachAgent fullName issueNum
+    handleDetachAgent handleAction fullName issueNum
   StopAgent fullName issueNum ->
     handleStopAgent handleAction
       fullName issueNum
@@ -436,3 +438,29 @@ handleAction = case _ of
     handleRefreshAgentSessions
   ToggleSessionFilter label ->
     handleToggleSessionFilter label
+
+  ------------------------------------------------
+  -- Toast notifications
+  ------------------------------------------------
+
+  ShowToast msg level -> do
+    st <- H.get
+    let
+      tid = st.nextToastId
+      toast = { id: tid, message: msg, level }
+    H.modify_ _
+      { toasts = st.toasts <> [ toast ]
+      , nextToastId = tid + 1
+      }
+    -- Auto-dismiss after 4 seconds
+    H.liftAff $ delay (Milliseconds 4000.0)
+    H.modify_ \s -> s
+      { toasts = filter
+          (\t -> t.id /= tid) s.toasts
+      }
+
+  DismissToast tid ->
+    H.modify_ \s -> s
+      { toasts = filter
+          (\t -> t.id /= tid) s.toasts
+      }
