@@ -37,8 +37,11 @@ export function getCachedResponseImpl(url) {
             const req = store.get(url);
             req.onsuccess = () => {
               if (req.result) {
+                const key = url.startsWith("graphql:") ? "graphql:..." : url;
+                console.log("[cache] HIT", key);
                 onFound(req.result)();
               } else {
+                console.log("[cache] MISS", url.startsWith("graphql:") ? "graphql:..." : url);
                 onMissing();
               }
             };
@@ -60,6 +63,8 @@ export function putCachedResponseImpl(url) {
             .then((db) => {
               const tx = db.transaction("responses", "readwrite");
               const store = tx.objectStore("responses");
+              const key = url.startsWith("graphql:") ? "graphql:..." : url;
+              console.log("[cache] PUT", key);
               store.put({
                 url: url,
                 etag: etag,
