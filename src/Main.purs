@@ -195,7 +195,7 @@ handleAction = case _ of
   ------------------------------------------------
 
   Initialize -> do
-    saved <- liftEffect loadToken
+    saved <- H.liftAff loadToken
     repoList <- liftEffect loadRepoList
     agentUrl <- liftEffect loadAgentServer
     vs <- liftEffect loadViewState
@@ -241,7 +241,7 @@ handleAction = case _ of
       H.modify_ _
         { error = Just "Please enter a token" }
     else do
-      liftEffect $ saveToken st.token
+      H.liftAff $ saveToken st.token
       H.modify_ _
         { hasToken = true
         , error = Nothing
