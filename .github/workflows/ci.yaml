@@ -18,3 +18,5 @@ jobs:
         with:
           cachix-auth-token: "${{ secrets.CACHIX_AUTH_TOKEN }}"
       - run: nix develop --quiet -c just ci
+        env:
+          GH_DASHBOARD_TOKEN: ${{ secrets.GH_DASHBOARD_TOKEN }}
