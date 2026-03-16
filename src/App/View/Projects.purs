@@ -1,6 +1,6 @@
 -- | Projects view — renders GitHub Projects v2 as
 -- | expandable table rows with lazy item loading.
-module View.Projects
+module App.View.Projects
   ( renderProjects
   ) where
 
@@ -18,7 +18,7 @@ import Halogen.HTML.Core (AttrName(..))
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Lib.Types (Project(..), ProjectItem(..), StatusField)
-import Lib.UI.Widgets
+import App.View.Widgets
   ( copyButton
   , launchButton
   , refreshButton
@@ -29,7 +29,7 @@ import Lib.UI.Helpers
   , renderTerminalRow
   , termElementId
   )
-import View.Types (Action(..), State)
+import App.View.Types (Action(..), State)
 
 -- | Render all projects as an expandable table.
 renderProjects

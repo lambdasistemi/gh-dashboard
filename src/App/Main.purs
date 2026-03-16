@@ -19,11 +19,11 @@
 -- | If you're looking for the actual handler logic,
 -- | see the `Action.*` modules. If you're looking for
 -- | the view layer, see `View` and `View.*`.
-module Main where
+module App.Main where
 
 import Prelude
 
-import Action.Agent
+import App.Action.Agent
   ( handleDetachAgent
   , handleLaunchAgent
   , handleRefreshAgentSessions
@@ -31,11 +31,11 @@ import Action.Agent
   , handleStopAgent
   , handleToggleSessionFilter
   )
-import Action.Common
+import App.Action.Common
   ( persistView
   , toggleSet
   )
-import Action.Projects
+import App.Action.Projects
   ( handleDeleteItem
   , handleExpandProject
   , handleRefreshProjectItem
@@ -52,7 +52,7 @@ import Action.Projects
   , handleSubmitRenameProject
   , handleToggleProjectRepoFilter
   )
-import Action.Repos
+import App.Action.Repos
   ( handleDragDrop
   , handleDragStart
   , handleHideItem
@@ -87,9 +87,9 @@ import Lib.GitHub.GraphQL
   ( cachedUserProjects
   , cachedProjectItems
   )
-import Refresh (doRefresh, loadCachedRepos)
+import App.Refresh (doRefresh, loadCachedRepos)
 import Lib.Util.Repo (applyFilter)
-import Storage
+import App.Storage
   ( clearAll
   , clearToken
   , loadAgentServer
@@ -99,7 +99,7 @@ import Storage
   , saveToken
   )
 import Lib.Types (Page(..))
-import View (Action(..), State, renderDashboard, renderTokenForm)
+import App.View (Action(..), State, renderDashboard, renderTokenForm)
 import Web.HTML (window)
 import Web.HTML.Window (confirm)
 
@@ -441,7 +441,8 @@ handleAction = case _ of
     handleExpandProject handleAction projectId
   RefreshProjectItems projectId ->
     handleRefreshProjectItems
-      handleAction projectId
+      handleAction
+      projectId
   RefreshProjectItem pid repo num ->
     handleRefreshProjectItem pid repo num
   ToggleProjectRepoFilter repo ->
@@ -473,12 +474,15 @@ handleAction = case _ of
 
   LaunchAgent toggleKey fullName issueNum ->
     handleLaunchAgent handleAction
-      toggleKey fullName issueNum
+      toggleKey
+      fullName
+      issueNum
   DetachAgent fullName issueNum ->
     handleDetachAgent handleAction fullName issueNum
   StopAgent fullName issueNum ->
     handleStopAgent handleAction
-      fullName issueNum
+      fullName
+      issueNum
   SetAgentServer url ->
     handleSetAgentServer url
   RefreshAgentSessions ->
@@ -503,11 +507,13 @@ handleAction = case _ of
     H.liftAff $ delay (Milliseconds 4000.0)
     H.modify_ \s -> s
       { toasts = filter
-          (\t -> t.id /= tid) s.toasts
+          (\t -> t.id /= tid)
+          s.toasts
       }
 
   DismissToast tid ->
     H.modify_ \s -> s
       { toasts = filter
-          (\t -> t.id /= tid) s.toasts
+          (\t -> t.id /= tid)
+          s.toasts
       }

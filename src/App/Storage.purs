@@ -1,5 +1,5 @@
 -- | LocalStorage helpers for persisting dashboard state.
-module Storage
+module App.Storage
   ( ViewState
   , loadToken
   , saveToken
@@ -175,59 +175,81 @@ loadViewState = do
             Nothing -> defaultViewState
             Just obj ->
               { currentPage:
-                  case lmap printJsonDecodeError
-                    (obj .: "currentPage") of
+                  case
+                    lmap printJsonDecodeError
+                      (obj .: "currentPage")
+                    of
                     Right "ProjectsPage" ->
                       ProjectsPage
                     _ -> ReposPage
               , expanded:
-                  case lmap printJsonDecodeError
-                    (obj .:? "expanded") of
+                  case
+                    lmap printJsonDecodeError
+                      (obj .:? "expanded")
+                    of
                     Right m -> m
                     _ -> Nothing
               , expandedProject:
-                  case lmap printJsonDecodeError
-                    (obj .:? "expandedProject") of
+                  case
+                    lmap printJsonDecodeError
+                      (obj .:? "expandedProject")
+                    of
                     Right m -> m
                     _ -> Nothing
               , expandedItems:
-                  case lmap printJsonDecodeError
-                    (obj .: "expandedItems") of
+                  case
+                    lmap printJsonDecodeError
+                      (obj .: "expandedItems")
+                    of
                     Right j -> decodeSet j
                     _ -> Set.empty
               , filterText:
-                  case lmap printJsonDecodeError
-                    (obj .: "filterText") of
+                  case
+                    lmap printJsonDecodeError
+                      (obj .: "filterText")
+                    of
                     Right t -> t
                     _ -> ""
               , hiddenItems:
-                  case lmap printJsonDecodeError
-                    (obj .: "hiddenItems") of
+                  case
+                    lmap printJsonDecodeError
+                      (obj .: "hiddenItems")
+                    of
                     Right j -> decodeSet j
                     _ -> Set.empty
               , darkTheme:
-                  case lmap printJsonDecodeError
-                    (obj .: "darkTheme") of
+                  case
+                    lmap printJsonDecodeError
+                      (obj .: "darkTheme")
+                    of
                     Right d -> d
                     _ -> true
               , issueLabelFilters:
-                  case lmap printJsonDecodeError
-                    (obj .: "issueLabelFilters") of
+                  case
+                    lmap printJsonDecodeError
+                      (obj .: "issueLabelFilters")
+                    of
                     Right j -> decodeSet j
                     _ -> Set.empty
               , prLabelFilters:
-                  case lmap printJsonDecodeError
-                    (obj .: "prLabelFilters") of
+                  case
+                    lmap printJsonDecodeError
+                      (obj .: "prLabelFilters")
+                    of
                     Right j -> decodeSet j
                     _ -> Set.empty
               , workflowStatusFilters:
-                  case lmap printJsonDecodeError
-                    (obj .: "workflowStatusFilters") of
+                  case
+                    lmap printJsonDecodeError
+                      (obj .: "workflowStatusFilters")
+                    of
                     Right j -> decodeSet j
                     _ -> Set.empty
               , projectRepoFilters:
-                  case lmap printJsonDecodeError
-                    (obj .: "projectRepoFilters") of
+                  case
+                    lmap printJsonDecodeError
+                      (obj .: "projectRepoFilters")
+                    of
                     Right j -> decodeSet j
                     _ -> Set.empty
               }

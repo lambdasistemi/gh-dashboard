@@ -23,7 +23,7 @@ package:
     - js-promise
     - js-promise-aff
   bundle:
-    module: Main
+    module: App.Main
     outfile: dist/index.js
     platform: browser
     type: app

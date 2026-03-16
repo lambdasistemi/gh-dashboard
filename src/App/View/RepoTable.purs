@@ -1,5 +1,5 @@
 -- | Repo table rendering — table, rows, and badges.
-module View.RepoTable
+module App.View.RepoTable
   ( renderRepoTable
   ) where
 
@@ -11,9 +11,9 @@ import Halogen.HTML.Core (AttrName(..))
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Lib.Types (Repo(..))
-import View.Detail (renderDetailPanel)
+import App.View.Detail (renderDetailPanel)
 import Lib.UI.Helpers (formatDate, linkButton)
-import View.Types (Action(..), State)
+import App.View.Types (Action(..), State)
 
 -- | The repo table with rows.
 renderRepoTable

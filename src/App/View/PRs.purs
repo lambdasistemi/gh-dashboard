@@ -1,5 +1,5 @@
 -- | Pull requests section rendering.
-module View.PRs
+module App.View.PRs
   ( renderPRsSection
   ) where
 
@@ -23,10 +23,12 @@ import Halogen.HTML.Properties as HP
 import Lib.Types (CheckRun(..), PullRequest(..))
 import Lib.UI.Widgets
   ( collectLabels
-  , copyButton
+  , renderLabelSelector
+  )
+import App.View.Widgets
+  ( copyButton
   , hideButton
   , refreshButton
-  , renderLabelSelector
   )
 import Halogen.HTML.Core (PropName(..))
 import Lib.UI.Helpers
@@ -38,7 +40,7 @@ import Lib.UI.Helpers
   , renderAuthor
   , renderLabels
   )
-import View.Types (Action(..), State)
+import App.View.Types (Action(..), State)
 
 -- | PRs sub-section with visible/hidden partitions.
 renderPRsSection

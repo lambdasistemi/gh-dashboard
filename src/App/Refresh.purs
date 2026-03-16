@@ -1,5 +1,5 @@
 -- | Async refresh logic for repos and PRs.
-module Refresh
+module App.Refresh
   ( doRefresh
   , loadCachedRepos
   , refreshSinglePR
@@ -24,9 +24,9 @@ import Lib.GitHub
   )
 import Halogen as H
 import Lib.Util.Repo (orderRepos, upsertRepo)
-import Storage (saveRepoList)
+import App.Storage (saveRepoList)
 import Lib.Types (PullRequest(..), Repo(..))
-import View.Types (Action, State)
+import App.View.Types (Action, State)
 
 -- | Load repos from cache without network requests.
 -- | Returns true if cached data was found.

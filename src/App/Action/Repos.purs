@@ -25,7 +25,7 @@
 -- | Each handler receives a `Dispatch` callback for
 -- | cross-module action calls (e.g. refreshing agent
 -- | sessions after certain operations).
-module Action.Repos
+module App.Action.Repos
   ( handleRefreshRepo
   , handleRefreshIssues
   , handleRefreshIssue
@@ -47,7 +47,7 @@ module Action.Repos
 
 import Prelude
 
-import Action.Common
+import App.Action.Common
   ( Dispatch
   , HalogenAction
   , guardExpanded
@@ -86,9 +86,9 @@ import Lib.GitHub.Rest
   , fetchWorkflowRuns
   )
 import Halogen as H
-import Refresh (refreshSinglePR)
+import App.Refresh (refreshSinglePR)
 import Lib.Util.Repo (moveItem, orderRepos, parseRepoName, upsertRepo)
-import Storage (saveRepoList)
+import App.Storage (saveRepoList)
 import Lib.Types
   ( Issue(..)
   , PullRequest(..)
@@ -96,7 +96,7 @@ import Lib.Types
   , WorkflowJob(..)
   , WorkflowRun(..)
   )
-import View.Types (Action(..), State)
+import App.View.Types (Action(..), State)
 import Effect.Aff (Aff)
 import Web.HTML (window)
 import Web.HTML.Window (confirm)

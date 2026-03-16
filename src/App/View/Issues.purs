@@ -1,5 +1,5 @@
 -- | Issues section rendering.
-module View.Issues
+module App.View.Issues
   ( renderIssuesSection
   ) where
 
@@ -15,11 +15,13 @@ import Halogen.HTML.Properties as HP
 import Lib.Types (Issue(..))
 import Lib.UI.Widgets
   ( collectLabels
-  , copyButton
+  , renderLabelSelector
+  )
+import App.View.Widgets
+  ( copyButton
   , hideButton
   , launchButton
   , refreshButton
-  , renderLabelSelector
   )
 import Lib.UI.Helpers
   ( detailHead
@@ -32,7 +34,7 @@ import Lib.UI.Helpers
   , renderTerminalRow
   , termElementId
   )
-import View.Types (Action(..), State)
+import App.View.Types (Action(..), State)
 
 -- | Issues sub-section with visible/hidden partitions.
 renderIssuesSection

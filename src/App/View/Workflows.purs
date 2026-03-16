@@ -1,5 +1,5 @@
 -- | Workflows section rendering.
-module View.Workflows
+module App.View.Workflows
   ( renderWorkflowsSection
   ) where
 
@@ -22,12 +22,10 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Lib.Types (CommitPR, WorkflowJob(..), WorkflowRun(..))
-import Lib.UI.Widgets
-  ( refreshButton
-  , renderLabelSelector
-  )
+import Lib.UI.Widgets (renderLabelSelector)
+import App.View.Widgets (refreshButton)
 import Lib.UI.Helpers (formatDateTime, linkButton)
-import View.Types (Action(..), State)
+import App.View.Types (Action(..), State)
 
 -- | Derive effective status for a workflow run.
 runStatus :: WorkflowRun -> String

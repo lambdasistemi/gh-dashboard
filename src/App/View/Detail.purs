@@ -1,15 +1,15 @@
 -- | Detail panel rendering — composes issues and PRs sections.
-module View.Detail
+module App.View.Detail
   ( renderDetailPanel
   ) where
 
 import Data.Maybe (Maybe(..))
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
-import View.Issues (renderIssuesSection)
-import View.PRs (renderPRsSection)
-import View.Types (Action, State)
-import View.Workflows (renderWorkflowsSection)
+import App.View.Issues (renderIssuesSection)
+import App.View.PRs (renderPRsSection)
+import App.View.Types (Action, State)
+import App.View.Workflows (renderWorkflowsSection)
 
 -- | Detail panel shown below expanded row.
 renderDetailPanel

@@ -23,7 +23,7 @@
 -- | - `handleRefreshAgentSessions` — GET /sessions and
 -- |   update the session status map so the UI can show
 -- |   running/stopped badges.
-module Action.Agent
+module App.Action.Agent
   ( handleLaunchAgent
   , handleDetachAgent
   , handleStopAgent
@@ -35,7 +35,7 @@ module Action.Agent
 
 import Prelude
 
-import Action.Common
+import App.Action.Common
   ( Dispatch
   , HalogenAction
   , termElementId
@@ -75,8 +75,8 @@ import Effect.Exception (message)
 import Lib.FFI.Terminal (attachTerminal, destroyTerminal)
 import Fetch (fetch)
 import Halogen as H
-import Storage (saveAgentServer)
-import View.Types (Action(..), State, ToastLevel(..))
+import App.Storage (saveAgentServer)
+import App.View.Types (Action(..), State, ToastLevel(..))
 
 handleLaunchAgent
   :: forall o

@@ -25,7 +25,7 @@
 -- | and deletes are applied to state immediately before
 -- | the API call, then rolled back on error. This keeps
 -- | the UI snappy despite network latency.
-module Action.Projects
+module App.Action.Projects
   ( handleRefreshProjects
   , handleExpandProject
   , handleRefreshProjectItems
@@ -46,7 +46,7 @@ module Action.Projects
 
 import Prelude
 
-import Action.Common
+import App.Action.Common
   ( Dispatch
   , HalogenAction
   , persistView
@@ -76,7 +76,7 @@ import Lib.Types
   , Project(..)
   , ProjectItem(..)
   )
-import View.Types (Action(..), State)
+import App.View.Types (Action(..), State)
 
 handleRefreshProjects
   :: forall o. Dispatch o -> HalogenAction o
