@@ -792,26 +792,27 @@ renderItemRow state projId mSf (ProjectItem item) =
                           else []
                         )
                       <>
-                        if not isDone then
-                          case sessionState of
-                            Just st
-                              | st == "running" ->
-                                [ HH.span
-                                    [ HP.class_
-                                        ( HH.ClassName
-                                            "agent-badge"
-                                        )
-                                    , HP.title
-                                        ( "Agent: "
-                                            <> st
-                                        )
-                                    ]
-                                    [ HH.text
-                                        "\x25C9 "
-                                    ]
-                                ]
-                            _ -> []
-                        else []
+                        ( if not isDone then
+                            case sessionState of
+                              Just st
+                                | st == "running" ->
+                                  [ HH.span
+                                      [ HP.class_
+                                          ( HH.ClassName
+                                              "agent-badge"
+                                          )
+                                      , HP.title
+                                          ( "Agent: "
+                                              <> st
+                                          )
+                                      ]
+                                      [ HH.text
+                                          "\x25C9 "
+                                      ]
+                                  ]
+                              _ -> []
+                          else []
+                        )
                       <> [ HH.text item.title ]
                   )
               , if null item.labels then
