@@ -7,7 +7,7 @@ module App.View.Kanban
 
 import Prelude
 
-import Data.Array (filter, length, null)
+import Data.Array (any, filter, length, null)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Halogen.HTML as HH
@@ -17,10 +17,33 @@ import Lib.Types
   ( Page(..)
   , Project(..)
   , ProjectItem(..)
+  , StatusField
   )
 import App.View.Projects (renderItemRow)
 import App.View.Widgets (refreshButton)
 import App.View.Types (Action(..), State)
+
+-- | The three required kanban statuses.
+kanbanStatuses :: Array String
+kanbanStatuses = [ "Backlog", "WIP", "Done" ]
+
+-- | Filter a status field to only kanban statuses.
+kanbanStatusField :: StatusField -> StatusField
+kanbanStatusField sf = sf
+  { options = filter
+      (\o -> any (_ == o.name) kanbanStatuses)
+      sf.options
+  }
+
+-- | Check if a status field has all required statuses.
+hasRequiredStatuses :: StatusField -> Boolean
+hasRequiredStatuses sf =
+  let
+    names = map _.name sf.options
+  in
+    any (_ == "Backlog") names
+      && any (_ == "WIP") names
+      && any (_ == "Done") names
 
 -- | Project setup — shown when no kanban project
 -- | is configured.
@@ -33,7 +56,7 @@ renderProjectSetup state =
     , HH.p
         [ HP.class_ (HH.ClassName "muted") ]
         [ HH.text
-            "Choose a GitHub Project to use as your Kanban board."
+            "The project must have exactly three statuses: Backlog, WIP, Done."
         ]
     , if state.projectsLoading then
         HH.p_ [ HH.text "Loading projects..." ]
@@ -49,32 +72,74 @@ renderProjectSetup state =
           [ HP.class_
               (HH.ClassName "kanban-project-list")
           ]
-          ( map renderProjectOption state.projects
+          ( map
+              ( renderProjectOption state )
+              state.projects
           )
     ]
 
 -- | A single project option in the setup list.
 renderProjectOption
-  :: forall w. Project -> HH.HTML w Action
-renderProjectOption (Project p) =
-  HH.div
-    [ HP.class_
-        (HH.ClassName "kanban-project-option")
-    , HE.onClick \_ -> SetKanbanProject p.id
-    ]
-    [ HH.span
-        [ HP.class_
-            (HH.ClassName "kanban-project-title")
-        ]
-        [ HH.text p.title ]
-    , HH.span
-        [ HP.class_
-            (HH.ClassName "kanban-project-count")
-        ]
-        [ HH.text
-            (show p.itemCount <> " items")
-        ]
-    ]
+  :: forall w
+   . State
+  -> Project
+  -> HH.HTML w Action
+renderProjectOption state (Project p) =
+  let
+    mSf = Map.lookup p.id
+      state.projectStatusFields
+    valid = case mSf of
+      Just sf -> hasRequiredStatuses sf
+      Nothing -> false
+    loaded = Map.member p.id
+      state.projectStatusFields
+  in
+    HH.div
+      [ HP.class_
+          ( HH.ClassName
+              ( "kanban-project-option"
+                  <>
+                    if valid then " valid"
+                    else ""
+              )
+          )
+      , if valid then
+          HE.onClick \_ -> SetKanbanProject p.id
+        else
+          HE.onClick \_ ->
+            RefreshProjectItems p.id
+      ]
+      [ HH.span
+          [ HP.class_
+              (HH.ClassName "kanban-project-title")
+          ]
+          [ HH.text p.title ]
+      , HH.span
+          [ HP.class_
+              (HH.ClassName "kanban-project-count")
+          ]
+          [ HH.text
+              (show p.itemCount <> " items")
+          ]
+      , if not loaded then
+          HH.span
+            [ HP.class_ (HH.ClassName "muted") ]
+            [ HH.text " (click to check)" ]
+        else if valid then
+          HH.span
+            [ HP.class_
+                (HH.ClassName "badge")
+            ]
+            [ HH.text " \x2713" ]
+        else
+          HH.span
+            [ HP.class_
+                (HH.ClassName "error")
+            ]
+            [ HH.text
+                " Missing Backlog/WIP/Done statuses"
+            ]
+      ]
 
 -- | Main kanban view — renders the current column
 -- | using the same table layout as the repos tab.
@@ -97,8 +162,10 @@ renderKanban state =
               fromMaybe "" pi.status == columnStatus
           )
           items
-        mSf = Map.lookup projId
-          state.projectStatusFields
+        mSf = map kanbanStatusField
+          ( Map.lookup projId
+              state.projectStatusFields
+          )
         count = length columnItems
       in
         HH.div
