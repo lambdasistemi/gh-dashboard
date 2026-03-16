@@ -635,6 +635,14 @@ renderItemRow state projId mSf (ProjectItem item) =
       Just k ->
         Set.member k state.agentWorktrees
       Nothing -> false
+    hasBranch = case itemKey of
+      Just k -> Map.member k state.agentBranches
+      Nothing -> false
+    branchInfo = case itemKey of
+      Just k -> Map.lookup k state.agentBranches
+      Nothing -> Nothing
+    isWIP = curStatus == "WIP"
+    isDone = curStatus == "Done"
     rowClass = "repo-row"
       <>
         if hasTerminal then " terminal-active"
@@ -657,11 +665,14 @@ renderItemRow state projId mSf (ProjectItem item) =
                           n
                       )
                   ]
-                    <> launchButton
-                      state.launchedItems
-                      key
-                      repo
-                      n
+                    <>
+                      if isWIP then
+                        launchButton
+                          state.launchedItems
+                          key
+                          repo
+                          n
+                      else []
                 _, _ -> []
                 <>
                   case item.url of
@@ -744,7 +755,30 @@ renderItemRow state projId mSf (ProjectItem item) =
                         )
                     ]
                       <>
-                        ( if hasWorktree then
+                        ( if hasBranch then
+                            [ HH.span
+                                [ HP.class_
+                                    ( HH.ClassName
+                                        "branch-badge"
+                                    )
+                                , HP.title
+                                    ( case branchInfo of
+                                        Just bi ->
+                                          bi.name
+                                            <> " ("
+                                            <> bi.sync
+                                            <> ")"
+                                        Nothing ->
+                                          "Has branch"
+                                    )
+                                ]
+                                [ HH.text "\x2387 " ]
+                            ]
+                          else []
+                        )
+                      <>
+                        ( if hasWorktree && not isDone
+                            then
                             [ HH.span
                                 [ HP.class_
                                     ( HH.ClassName
@@ -752,23 +786,31 @@ renderItemRow state projId mSf (ProjectItem item) =
                                     )
                                 , HP.title "Worktree"
                                 ]
-                                [ HH.text "\x2387 " ]
+                                [ HH.text "\x1F333 " ]
                             ]
                           else []
                         )
-                      <> case sessionState of
-                        Just st | st == "running" ->
-                          [ HH.span
-                              [ HP.class_
-                                  ( HH.ClassName
-                                      "agent-badge"
-                                  )
-                              , HP.title
-                                  ("Agent: " <> st)
-                              ]
-                              [ HH.text "\x25C9 " ]
-                          ]
-                        _ -> []
+                      <>
+                        if not isDone then
+                          case sessionState of
+                            Just st
+                              | st == "running" ->
+                                [ HH.span
+                                    [ HP.class_
+                                        ( HH.ClassName
+                                            "agent-badge"
+                                        )
+                                    , HP.title
+                                        ( "Agent: "
+                                            <> st
+                                        )
+                                    ]
+                                    [ HH.text
+                                        "\x25C9 "
+                                    ]
+                                ]
+                            _ -> []
+                        else []
                       <> [ HH.text item.title ]
                   )
               , if null item.labels then
