@@ -1,5 +1,5 @@
 -- | FFI to copy text to the system clipboard.
-module FFI.Clipboard (copyToClipboard) where
+module Lib.FFI.Clipboard (copyToClipboard) where
 
 import Prelude
 

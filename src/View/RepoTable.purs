@@ -10,9 +10,9 @@ import Halogen.HTML as HH
 import Halogen.HTML.Core (AttrName(..))
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Types (Repo(..))
+import Lib.Types (Repo(..))
 import View.Detail (renderDetailPanel)
-import View.Helpers (formatDate, linkButton)
+import Lib.UI.Helpers (formatDate, linkButton)
 import View.Types (Action(..), State)
 
 -- | The repo table with rows.

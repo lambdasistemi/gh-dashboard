@@ -1,5 +1,5 @@
 -- | FFI for browser dialog boxes.
-module FFI.Dialog (confirmDialog) where
+module Lib.FFI.Dialog (confirmDialog) where
 
 import Effect (Effect)
 

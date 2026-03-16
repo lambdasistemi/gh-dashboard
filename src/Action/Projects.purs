@@ -58,8 +58,8 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), indexOf, toLower)
 import Effect.Aff (Aff)
-import FFI.Dialog (confirmDialog)
-import GitHub.GraphQL
+import Lib.FFI.Dialog (confirmDialog)
+import Lib.GitHub.GraphQL
   ( addDraftItem
   , deleteProjectItem
   , fetchProjectItems
@@ -68,10 +68,10 @@ import GitHub.GraphQL
   , updateDraftItem
   , updateItemStatus
   )
-import GitHub.Rest (fetchIssue)
+import Lib.GitHub.Rest (fetchIssue)
 import Halogen as H
 import Effect.Class (liftEffect)
-import Types
+import Lib.Types
   ( Issue(..)
   , Project(..)
   , ProjectItem(..)

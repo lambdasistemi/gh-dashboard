@@ -20,8 +20,8 @@ import Data.Set as Set
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Types (CheckRun(..), PullRequest(..))
-import View.DetailWidgets
+import Lib.Types (CheckRun(..), PullRequest(..))
+import Lib.UI.Widgets
   ( collectLabels
   , copyButton
   , hideButton
@@ -29,7 +29,7 @@ import View.DetailWidgets
   , renderLabelSelector
   )
 import Halogen.HTML.Core (PropName(..))
-import View.Helpers
+import Lib.UI.Helpers
   ( detailHead
   , formatDate
   , linkButton

@@ -10,12 +10,12 @@
 -- | Import this module for the full API surface, or
 -- | import the sub-modules directly for a narrower
 -- | dependency.
-module GitHub
-  ( module GitHub.Rest
-  , module GitHub.GraphQL
+module Lib.GitHub
+  ( module Lib.GitHub.Rest
+  , module Lib.GitHub.GraphQL
   ) where
 
-import GitHub.Rest
+import Lib.GitHub.Rest
   ( RateLimit
   , ghFetch
   , fetchAllPages
@@ -32,7 +32,7 @@ import GitHub.Rest
   , fetchCommitPRs
   , cachedRepo
   )
-import GitHub.GraphQL
+import Lib.GitHub.GraphQL
   ( ghGraphQL
   , fetchUserProjects
   , fetchProjectItems

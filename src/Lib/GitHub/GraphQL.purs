@@ -22,7 +22,7 @@
 -- | `navigateProjectItems`) is intentionally verbose to
 -- | give clear error messages when the response shape
 -- | changes.
-module GitHub.GraphQL
+module Lib.GitHub.GraphQL
   ( ghGraphQL
   , fetchUserProjects
   , fetchProjectItems
@@ -59,8 +59,8 @@ import Data.HTTP.Method (Method(..))
 import Effect.Aff (Aff, try)
 import Effect.Exception (message)
 import Fetch (fetch)
-import FFI.Cache as Cache
-import Types
+import Lib.FFI.Cache as Cache
+import Lib.Types
   ( Project(..)
   , ProjectItem(..)
   , StatusField

@@ -1,5 +1,5 @@
 -- | Shared rendering helpers used across view sub-modules.
-module View.Helpers
+module Lib.UI.Helpers
   ( renderMarkdownRow
   , renderTerminalRow
   , termElementId
@@ -27,7 +27,7 @@ import Data.String
 import Halogen.HTML as HH
 import Halogen.HTML.Core (AttrName(..), PropName(..))
 import Halogen.HTML.Properties as HP
-import Types (Assignee, Label)
+import Lib.Types (Assignee, Label)
 
 foreign import parseMarkdownImpl :: String -> String
 

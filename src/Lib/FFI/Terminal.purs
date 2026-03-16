@@ -1,5 +1,5 @@
 -- | FFI to embed xterm.js terminals inline.
-module FFI.Terminal
+module Lib.FFI.Terminal
   ( attachTerminal
   , destroyTerminal
   , destroyOrphanedTerminals

@@ -9,7 +9,7 @@
 -- | 2. Send `If-None-Match` with the stored ETag
 -- | 3. Handle 304 Not Modified (return cached body)
 -- | 4. Store fresh responses for next time
-module FFI.Cache
+module Lib.FFI.Cache
   ( CachedResponse
   , getCachedResponse
   , putCachedResponse

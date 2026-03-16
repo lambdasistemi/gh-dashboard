@@ -1,5 +1,5 @@
 -- | Pure helpers for repo list manipulation.
-module RepoUtils
+module Lib.Util.Repo
   ( applyFilter
   , parseRepoName
   , upsertRepo
@@ -15,7 +15,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (Pattern(..), contains, toLower, trim)
 import Data.String (replaceAll, split) as Str
 import Data.String.Pattern (Replacement(..))
-import Types (Repo(..))
+import Lib.Types (Repo(..))
 
 -- | Filter repos by name/description.
 applyFilter :: String -> Array Repo -> Array Repo

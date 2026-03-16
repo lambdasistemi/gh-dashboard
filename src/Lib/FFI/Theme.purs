@@ -1,5 +1,5 @@
 -- | FFI to toggle light/dark theme class on the body element.
-module FFI.Theme (setBodyTheme) where
+module Lib.FFI.Theme (setBodyTheme) where
 
 import Prelude
 

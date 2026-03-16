@@ -8,9 +8,9 @@ module View.Types
 
 import Data.Maybe (Maybe)
 import Data.Set (Set)
-import GitHub (RateLimit)
+import Lib.GitHub (RateLimit)
 import Data.Map (Map)
-import Types
+import Lib.Types
   ( Page
   , Project
   , ProjectItem

@@ -17,13 +17,13 @@ import Halogen.HTML as HH
 import Halogen.HTML.Core (AttrName(..))
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Types (Project(..), ProjectItem(..), StatusField)
-import View.DetailWidgets
+import Lib.Types (Project(..), ProjectItem(..), StatusField)
+import Lib.UI.Widgets
   ( copyButton
   , launchButton
   , refreshButton
   )
-import View.Helpers
+import Lib.UI.Helpers
   ( linkButton
   , renderMarkdownRow
   , renderTerminalRow

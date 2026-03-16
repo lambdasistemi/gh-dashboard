@@ -21,12 +21,12 @@ import Data.String (take) as String
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Types (CommitPR, WorkflowJob(..), WorkflowRun(..))
-import View.DetailWidgets
+import Lib.Types (CommitPR, WorkflowJob(..), WorkflowRun(..))
+import Lib.UI.Widgets
   ( refreshButton
   , renderLabelSelector
   )
-import View.Helpers (formatDateTime, linkButton)
+import Lib.UI.Helpers (formatDateTime, linkButton)
 import View.Types (Action(..), State)
 
 -- | Derive effective status for a workflow run.

@@ -1,6 +1,6 @@
 -- | FFI for exporting/importing dashboard settings and
 -- | encrypted token storage.
-module FFI.Storage
+module Lib.FFI.Storage
   ( exportStorage
   , importStorage
   , saveTokenEncrypted
