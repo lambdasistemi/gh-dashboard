@@ -174,6 +174,7 @@ initialState =
   , agentSessions: Map.empty
   , agentWorktrees: Set.empty
   , agentBranches: Map.empty
+  , kanbanLabelFilters: Set.empty
   , sessionFilters: Set.empty
   , toasts: []
   , nextToastId: 0
@@ -259,6 +260,7 @@ handleAction = case _ of
           BacklogPage -> pure unit
           WIPPage -> pure unit
           DonePage -> pure unit
+          FiltersPage -> pure unit
           ReposPage -> do
             -- Show cached repos instantly
             _ <- loadCachedRepos
@@ -456,6 +458,7 @@ handleAction = case _ of
       BacklogPage -> pure unit
       WIPPage -> pure unit
       DonePage -> pure unit
+      FiltersPage -> pure unit
       ProjectsPage ->
         when (null st.projects) do
           handleAction RefreshProjects
@@ -515,6 +518,13 @@ handleAction = case _ of
     handleStopAgent handleAction
       fullName
       issueNum
+  ToggleKanbanLabelFilter label ->
+    H.modify_ \s -> s
+      { kanbanLabelFilters =
+          if Set.member label s.kanbanLabelFilters
+            then Set.delete label s.kanbanLabelFilters
+            else Set.insert label s.kanbanLabelFilters
+      }
   SetKanbanProject projId -> do
     H.modify_ _ { kanbanProject = Just projId }
     liftEffect $ saveKanbanProject projId

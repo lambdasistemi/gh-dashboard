@@ -3,13 +3,22 @@
 module App.View.Kanban
   ( renderKanban
   , renderProjectSetup
+  , renderFilters
   ) where
 
 import Prelude
 
-import Data.Array (any, filter, length, null)
+import Data.Array
+  ( any
+  , filter
+  , length
+  , nubEq
+  , null
+  , sort
+  )
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Set as Set
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
@@ -44,6 +53,39 @@ hasRequiredStatuses sf =
     any (_ == "Backlog") names
       && any (_ == "WIP") names
       && any (_ == "Done") names
+
+-- | Apply repo and label filters to items.
+applyKanbanFilters
+  :: State -> Array ProjectItem -> Array ProjectItem
+applyKanbanFilters state items =
+  let
+    repoFiltered =
+      if Set.isEmpty state.projectRepoFilters then
+        items
+      else
+        filter
+          ( \(ProjectItem pi) ->
+              Set.member
+                (fromMaybe "(no repo)" pi.repoName)
+                state.projectRepoFilters
+          )
+          items
+    labelFiltered =
+      if Set.isEmpty state.kanbanLabelFilters then
+        repoFiltered
+      else
+        filter
+          ( \(ProjectItem pi) ->
+              any
+                ( \l ->
+                    Set.member l
+                      state.kanbanLabelFilters
+                )
+                pi.labels
+          )
+          repoFiltered
+  in
+    labelFiltered
 
 -- | Project setup — shown when no kanban project
 -- | is configured.
@@ -171,42 +213,30 @@ renderProjectOption state (Project p) =
             ]
       ]
 
--- | Main kanban view — renders the current column
--- | using the same table layout as the repos tab.
-renderKanban
+-- | Filters pane — repo and label selectors.
+renderFilters
   :: forall w. State -> HH.HTML w Action
-renderKanban state =
+renderFilters state =
   case state.kanbanProject of
-    Nothing -> renderProjectSetup state
+    Nothing ->
+      HH.p
+        [ HP.class_ (HH.ClassName "muted") ]
+        [ HH.text "Select a project first." ]
     Just projId ->
-      let
-        mSf = Map.lookup projId
-          state.projectStatusFields
-        valid = case mSf of
-          Just sf -> hasRequiredStatuses sf
-          Nothing -> true -- not loaded yet, optimistic
-      in
-        if not valid then
-          renderProjectSetup state
-        else
       let
         items = fromMaybe []
           (Map.lookup projId state.projectItems)
-        columnStatus = case state.currentPage of
-          BacklogPage -> "Backlog"
-          WIPPage -> "WIP"
-          DonePage -> "Done"
-          _ -> "WIP"
-        columnItems = filter
+        allRepos = sort $ nubEq $ map
           ( \(ProjectItem pi) ->
-              fromMaybe "" pi.status == columnStatus
+              fromMaybe "(no repo)" pi.repoName
           )
           items
-        mSf = map kanbanStatusField
-          ( Map.lookup projId
-              state.projectStatusFields
-          )
-        count = length columnItems
+        allLabels = sort $ nubEq $ items >>=
+          \(ProjectItem pi) -> pi.labels
+        activeRepos = Set.size
+          state.projectRepoFilters
+        activeLabels = Set.size
+          state.kanbanLabelFilters
       in
         HH.div
           [ HP.class_
@@ -216,44 +246,182 @@ renderKanban state =
               [ HP.class_
                   (HH.ClassName "detail-heading")
               ]
-              [ HH.text
-                  ( columnStatus <> " ("
-                      <> show count
-                      <> ")"
-                  )
+              [ HH.text "Filters"
               , refreshButton
                   (RefreshProjectItems projId)
               ]
-          , if null columnItems then
-              HH.div
-                [ HP.class_
-                    (HH.ClassName "empty-msg")
-                ]
-                [ HH.text
-                    ( "No items in "
-                        <> columnStatus
-                    )
-                ]
-            else
-              HH.table
-                [ HP.class_
-                    (HH.ClassName "detail-table")
-                ]
-                [ HH.thead_
-                    [ HH.tr_
-                        [ HH.th_ []
-                        , HH.th_
-                            [ HH.text "Title" ]
-                        , HH.th_
-                            [ HH.text "Repo" ]
-                        , HH.th_ []
-                        ]
+          , HH.div
+              [ HP.class_
+                  (HH.ClassName "filter-group")
+              ]
+              [ HH.h3_
+                  [ HH.text
+                      ( "Repos"
+                          <>
+                            if activeRepos > 0 then
+                              " (" <> show activeRepos
+                                <> " active)"
+                            else ""
+                      )
+                  ]
+              , HH.div
+                  [ HP.class_
+                      (HH.ClassName "label-selector")
+                  ]
+                  ( map
+                      ( \repo ->
+                          HH.span
+                            [ HP.class_
+                                ( HH.ClassName
+                                    ( "label-tag clickable"
+                                        <>
+                                          if
+                                            Set.member repo
+                                              state.projectRepoFilters then " active"
+                                          else ""
+                                    )
+                                )
+                            , HE.onClick \_ ->
+                                ToggleProjectRepoFilter
+                                  repo
+                            ]
+                            [ HH.text repo ]
+                      )
+                      allRepos
+                  )
+              ]
+          , HH.div
+              [ HP.class_
+                  (HH.ClassName "filter-group")
+              ]
+              [ HH.h3_
+                  [ HH.text
+                      ( "Labels"
+                          <>
+                            if activeLabels > 0 then
+                              " (" <> show activeLabels
+                                <> " active)"
+                            else ""
+                      )
+                  ]
+              , if null allLabels then
+                  HH.p
+                    [ HP.class_
+                        (HH.ClassName "muted")
                     ]
-                , HH.tbody_
-                    ( columnItems >>= renderItemRow
-                        state
-                        projId
-                        mSf
+                    [ HH.text "No labels found" ]
+                else
+                  HH.div
+                    [ HP.class_
+                        (HH.ClassName "label-selector")
+                    ]
+                    ( map
+                        ( \lbl ->
+                            HH.span
+                              [ HP.class_
+                                  ( HH.ClassName
+                                      ( "label-tag clickable"
+                                          <>
+                                            if
+                                              Set.member lbl
+                                                state.kanbanLabelFilters then " active"
+                                            else ""
+                                      )
+                                  )
+                              , HE.onClick \_ ->
+                                  ToggleKanbanLabelFilter
+                                    lbl
+                              ]
+                              [ HH.text lbl ]
+                        )
+                        allLabels
                     )
-                ]
+              ]
           ]
+
+-- | Main kanban view — renders the current column
+-- | using the same table layout as the repos tab.
+renderKanban
+  :: forall w. State -> HH.HTML w Action
+renderKanban state =
+  case state.kanbanProject of
+    Nothing -> renderProjectSetup state
+    Just projId ->
+      let
+        mSfRaw = Map.lookup projId
+          state.projectStatusFields
+        valid = case mSfRaw of
+          Just sf -> hasRequiredStatuses sf
+          Nothing -> true
+      in
+        if not valid then
+          renderProjectSetup state
+        else
+          let
+            allItems = fromMaybe []
+              (Map.lookup projId state.projectItems)
+            items = applyKanbanFilters state allItems
+            columnStatus = case state.currentPage of
+              BacklogPage -> "Backlog"
+              WIPPage -> "WIP"
+              DonePage -> "Done"
+              _ -> "WIP"
+            columnItems = filter
+              ( \(ProjectItem pi) ->
+                  fromMaybe "" pi.status
+                    == columnStatus
+              )
+              items
+            mSf = map kanbanStatusField mSfRaw
+            count = length columnItems
+          in
+            HH.div
+              [ HP.class_
+                  (HH.ClassName "detail-section")
+              ]
+              [ HH.div
+                  [ HP.class_
+                      (HH.ClassName "detail-heading")
+                  ]
+                  [ HH.text
+                      ( columnStatus <> " ("
+                          <> show count
+                          <> ")"
+                      )
+                  , refreshButton
+                      (RefreshProjectItems projId)
+                  ]
+              , if null columnItems then
+                  HH.div
+                    [ HP.class_
+                        (HH.ClassName "empty-msg")
+                    ]
+                    [ HH.text
+                        ( "No items in "
+                            <> columnStatus
+                        )
+                    ]
+                else
+                  HH.table
+                    [ HP.class_
+                        (HH.ClassName "detail-table")
+                    ]
+                    [ HH.thead_
+                        [ HH.tr_
+                            [ HH.th_ []
+                            , HH.th_
+                                [ HH.text "Title" ]
+                            , HH.th_
+                                [ HH.text "Repo" ]
+                            , HH.th_ []
+                            ]
+                        ]
+                    , HH.tbody_
+                        ( columnItems
+                            >>= renderItemRow
+                              state
+                              projId
+                              mSf
+                        )
+                    ]
+              ]

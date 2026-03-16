@@ -14,7 +14,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Lib.Types (Page(..), Repo)
-import App.View.Kanban (renderKanban)
+import App.View.Kanban (renderFilters, renderKanban)
 import App.View.Projects (renderProjects)
 import App.View.RepoTable (renderRepoTable)
 import App.View.Types (Action(..), State, Toast, ToastLevel(..))
@@ -108,6 +108,7 @@ renderDashboard state repos =
         BacklogPage -> renderKanban state
         WIPPage -> renderKanban state
         DonePage -> renderKanban state
+        FiltersPage -> renderFilters state
         ReposPage ->
           HH.div_
             ( ( if state.showAddRepo then
@@ -204,6 +205,20 @@ renderToolbar state =
                 )
             ]
             [ HH.text "Done" ]
+        , HH.button
+            [ HE.onClick \_ ->
+                SwitchPage FiltersPage
+            , HP.class_
+                ( HH.ClassName
+                    ( "tab-btn"
+                        <> activeIf
+                          ( state.currentPage
+                              == FiltersPage
+                          )
+                    )
+                )
+            ]
+            [ HH.text "\x2699" ]
         , HH.button
             [ HE.onClick \_ ->
                 SwitchPage ReposPage

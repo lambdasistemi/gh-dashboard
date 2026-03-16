@@ -79,6 +79,7 @@ data Action
   | StartRenameProject String String
   | SetRenameProjectTitle String
   | SubmitRenameProject String String
+  | ToggleKanbanLabelFilter String
   | SetKanbanProject String
   | CreateKanbanProject
   | LaunchAgent String String Int
@@ -137,6 +138,7 @@ type State =
   , agentSessions :: Map String AgentSession
   , agentWorktrees :: Set String
   , agentBranches :: Map String AgentBranch
+  , kanbanLabelFilters :: Set String
   , sessionFilters :: Set String
   , toasts :: Array Toast
   , nextToastId :: Int
