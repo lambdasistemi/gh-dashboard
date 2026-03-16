@@ -278,6 +278,11 @@
       min-width: 80px;
     }
     .agent-badge { font-size: 14px; }
+    .agent-time {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: monospace;
+    }
     .agent-actions {
       display: flex;
       gap: 4px;
@@ -286,12 +291,14 @@
       border-top: 1px solid var(--border-subtle);
       min-height: 200px;
     }
+    .agent-creating { border-left: 3px solid #ff9800; }
     .agent-running { border-left: 3px solid #4caf50; }
-    .agent-waiting { border-left: 3px solid #ff9800; }
-    .agent-completed { border-left: 3px solid #2196f3; }
+    .agent-stopping { border-left: 3px solid #ff9800; }
     .agent-error { border-left: 3px solid #f44336; }
     .agent-idle { border-left: 3px solid var(--border-subtle); }
     .agent-unknown { border-left: 3px solid var(--border-subtle); }
+    .badge-creating { color: #ff9800; }
+    .badge-stopping { color: #ff9800; }
   </style>
 </head>
 <body>

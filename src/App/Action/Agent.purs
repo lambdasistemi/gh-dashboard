@@ -76,6 +76,7 @@ import Lib.FFI.Terminal (attachTerminal, destroyTerminal)
 import Fetch (fetch)
 import Halogen as H
 import App.Storage (saveAgentServer)
+import Lib.Types (AgentSession)
 import App.View.Types (Action(..), State, ToastLevel(..))
 
 handleLaunchAgent
@@ -341,8 +342,9 @@ reattachTerminals st =
     (Set.toUnfoldable st.launchedItems :: Array String)
 
 -- | Parse a single agent session JSON object into
--- | a (key, state) tuple.
-parseSession :: Json -> Maybe (Tuple String String)
+-- | a (key, AgentSession) tuple.
+parseSession
+  :: Json -> Maybe (Tuple String AgentSession)
 parseSession json = do
   obj <- toObject json
   repoJson <- hush (obj .: "repo")
@@ -353,9 +355,19 @@ parseSession json = do
   let
     state = fromMaybe "unknown"
       (hush (obj .: "state") :: Maybe String)
-  Just $ Tuple
-    (owner <> "/" <> name <> "#" <> show issue)
-    state
+    createdAt = fromMaybe ""
+      (hush (obj .: "createdAt") :: Maybe String)
+    worktree = fromMaybe ""
+      (hush (obj .: "worktree") :: Maybe String)
+    key = owner <> "/" <> name <> "#" <> show issue
+    session =
+      { state
+      , createdAt
+      , worktree
+      , repo: owner <> "/" <> name
+      , issue
+      }
+  Just $ Tuple key session
 
 -- | Parse a worktree JSON object into a session key.
 parseWorktreeKey :: Json -> Maybe String
