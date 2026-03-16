@@ -76,7 +76,7 @@ import Lib.FFI.Terminal (attachTerminal, destroyTerminal)
 import Fetch (fetch)
 import Halogen as H
 import App.Storage (saveAgentServer)
-import Lib.Types (AgentSession)
+import Lib.Types (AgentBranch, AgentSession)
 import App.View.Types (Action(..), State, ToastLevel(..))
 
 handleLaunchAgent
@@ -315,6 +315,30 @@ handleRefreshAgentSessions = do
                   { agentWorktrees =
                       Set.fromFoldable keys
                   }
+    -- Fetch branch info independently
+    brResult <- H.liftAff $ try do
+      resp <- fetch
+        (st.agentServer <> "/branches")
+        { method: GET }
+      resp.text
+    case brResult of
+      Left _ -> pure unit
+      Right brTxt -> case jsonParser brTxt of
+        Left _ -> pure unit
+        Right brJson ->
+          case toArray brJson of
+            Nothing -> pure unit
+            Just arr ->
+              let
+                entries = arr >>= \bj ->
+                  case parseBranch bj of
+                    Nothing -> []
+                    Just e -> [ e ]
+              in
+                H.modify_ _
+                  { agentBranches =
+                      Map.fromFoldable entries
+                  }
 
 handleToggleSessionFilter
   :: forall o. String -> HalogenAction o
@@ -387,3 +411,26 @@ parseWorktreeKey json = do
   name <- hush (repoObj .: "name") :: Maybe String
   issue <- hush (obj .: "issue") :: Maybe Int
   Just (owner <> "/" <> name <> "#" <> show issue)
+
+-- | Parse a branch JSON object into a (key, AgentBranch).
+parseBranch
+  :: Json -> Maybe (Tuple String AgentBranch)
+parseBranch json = do
+  obj <- toObject json
+  repoJson <- hush (obj .: "repo")
+  repoObj <- toObject repoJson
+  owner <- hush (repoObj .: "owner") :: Maybe String
+  name <- hush (repoObj .: "name") :: Maybe String
+  issue <- hush (obj .: "issue") :: Maybe Int
+  branchName <- hush (obj .: "name") :: Maybe String
+  let
+    sync = fromMaybe "unknown"
+      (hush (obj .: "sync") :: Maybe String)
+    key = owner <> "/" <> name <> "#" <> show issue
+    branch =
+      { repo: { owner, name }
+      , issue
+      , name: branchName
+      , sync
+      }
+  Just $ Tuple key branch

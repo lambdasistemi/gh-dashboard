@@ -132,7 +132,7 @@ renderSessionList state =
                     "Worktrees (no session)"
                 ]
             , HH.div_
-                ( map renderWorktreeRow worktreeOnly
+                ( map (renderWorktreeRow state) worktreeOnly
                 )
             ]
         else HH.text ""
@@ -194,18 +194,7 @@ renderSessionRow state (Tuple key session) =
                     (formatDateTime session.createdAt)
                 ]
             else HH.text ""
-          , if hasWorktree then
-              HH.span
-                [ HP.class_
-                    (HH.ClassName "agent-badge")
-                , HP.title
-                    ( if session.worktree /= "" then
-                        session.worktree
-                      else "Has worktree"
-                    )
-                ]
-                [ HH.text "\x1F333" ]
-            else HH.text ""
+          , renderStateBadges state key hasWorktree
           , renderSessionActions key
               hasTerminal
           ]
@@ -290,8 +279,8 @@ renderSessionActions key hasTerminal =
 
 -- | A worktree-only row (no active session).
 renderWorktreeRow
-  :: forall w. String -> HH.HTML w Action
-renderWorktreeRow key =
+  :: forall w. State -> String -> HH.HTML w Action
+renderWorktreeRow state key =
   HH.div
     [ HP.class_
         (HH.ClassName "agent-row agent-idle")
@@ -317,12 +306,7 @@ renderWorktreeRow key =
                 (HH.ClassName "agent-status-text")
             ]
             [ HH.text "worktree only" ]
-        , HH.span
-            [ HP.class_
-                (HH.ClassName "agent-badge")
-            , HP.title "Has worktree"
-            ]
-            [ HH.text "\x1F333" ]
+        , renderStateBadges state key true
         , case parseKey key of
             Just { repo, issue } ->
               HH.div
@@ -341,6 +325,43 @@ renderWorktreeRow key =
             Nothing -> HH.text ""
         ]
     ]
+
+-- | Branch, worktree, and session badges for a row.
+renderStateBadges
+  :: forall w
+   . State
+  -> String
+  -> Boolean
+  -> HH.HTML w Action
+renderStateBadges state key hasWorktree =
+  let
+    branchInfo = Map.lookup key state.agentBranches
+  in
+    HH.span
+      [ HP.class_
+          (HH.ClassName "agent-badges")
+      ]
+      [ case branchInfo of
+          Just br ->
+            HH.span
+              [ HP.class_
+                  (HH.ClassName "agent-badge")
+              , HP.title
+                  ( br.name <> " (" <> br.sync
+                      <> ")"
+                  )
+              ]
+              [ HH.text "\x2387" ]
+          Nothing -> HH.text ""
+      , if hasWorktree then
+          HH.span
+            [ HP.class_
+                (HH.ClassName "agent-badge")
+            , HP.title "Has worktree"
+            ]
+            [ HH.text "\x1F333" ]
+        else HH.text ""
+      ]
 
 -- | Collect unique session statuses with counts.
 collectStatuses
