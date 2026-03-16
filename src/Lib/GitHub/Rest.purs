@@ -20,7 +20,7 @@
 -- | Rate-limit information is extracted from every
 -- | response and threaded back to the caller so the UI
 -- | can display remaining quota.
-module GitHub.Rest
+module Lib.GitHub.Rest
   ( RateLimit
   , GHResponse
   , ghFetch
@@ -60,8 +60,8 @@ import Effect.Aff (Aff, try)
 import Effect.Exception (message)
 import Fetch (fetch)
 import Fetch.Internal.Headers as Headers
-import FFI.Cache as Cache
-import Types
+import Lib.FFI.Cache as Cache
+import Lib.Types
   ( CheckRun(..)
   , CommitPR
   , Issue

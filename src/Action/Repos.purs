@@ -73,8 +73,8 @@ import Data.Maybe (Maybe(..))
 import Data.Set as Set
 import Data.Tuple (Tuple(..))
 import Effect.Class (liftEffect)
-import FFI.Terminal (attachTerminal, destroyTerminal)
-import GitHub.Rest
+import Lib.FFI.Terminal (attachTerminal, destroyTerminal)
+import Lib.GitHub.Rest
   ( fetchCheckRuns
   , fetchCommitPRs
   , fetchCommitStatuses
@@ -87,9 +87,9 @@ import GitHub.Rest
   )
 import Halogen as H
 import Refresh (refreshSinglePR)
-import RepoUtils (moveItem, orderRepos, parseRepoName, upsertRepo)
+import Lib.Util.Repo (moveItem, orderRepos, parseRepoName, upsertRepo)
 import Storage (saveRepoList)
-import Types
+import Lib.Types
   ( Issue(..)
   , PullRequest(..)
   , Repo(..)

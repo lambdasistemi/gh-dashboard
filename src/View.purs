@@ -9,11 +9,11 @@ import Prelude
 
 import Data.Array (null)
 import Data.Maybe (Maybe(..))
-import GitHub (RateLimit)
+import Lib.GitHub (RateLimit)
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Types (Page(..), Repo)
+import Lib.Types (Page(..), Repo)
 import View.Projects (renderProjects)
 import View.RepoTable (renderRepoTable)
 import View.Types (Action(..), State, Toast, ToastLevel(..))

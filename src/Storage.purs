@@ -29,11 +29,11 @@ import Data.Tuple.Nested ((/\))
 import Data.Set as Set
 import Effect (Effect)
 import Effect.Aff (Aff)
-import FFI.Storage as FFIStorage
+import Lib.FFI.Storage as FFIStorage
 import Foreign.Object as FO
 import Data.Argonaut.Core as Json
 import Promise.Aff (toAffE)
-import Types (Page(..))
+import Lib.Types (Page(..))
 import Web.HTML (window)
 import Web.HTML.Window (localStorage)
 import Web.Storage.Storage as Storage

@@ -40,7 +40,7 @@ import Effect.Class (liftEffect)
 import Halogen as H
 import Effect.Aff (Aff)
 import Storage (saveViewState)
-import Types (RepoDetail)
+import Lib.Types (RepoDetail)
 import View.Types (Action, State)
 
 -- | A function that dispatches an `Action` within the

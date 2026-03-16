@@ -76,19 +76,19 @@ import Data.Set as Set
 import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), delay)
 import Effect.Class (liftEffect)
-import FFI.Cache as FFI.Cache
-import FFI.Clipboard (copyToClipboard)
-import FFI.Storage as FFIStorage
-import FFI.Theme (setBodyTheme)
+import Lib.FFI.Cache as FFI.Cache
+import Lib.FFI.Clipboard (copyToClipboard)
+import Lib.FFI.Storage as FFIStorage
+import Lib.FFI.Theme (setBodyTheme)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
-import GitHub.GraphQL
+import Lib.GitHub.GraphQL
   ( cachedUserProjects
   , cachedProjectItems
   )
 import Refresh (doRefresh, loadCachedRepos)
-import RepoUtils (applyFilter)
+import Lib.Util.Repo (applyFilter)
 import Storage
   ( clearAll
   , clearToken
@@ -98,7 +98,7 @@ import Storage
   , loadViewState
   , saveToken
   )
-import Types (Page(..))
+import Lib.Types (Page(..))
 import View (Action(..), State, renderDashboard, renderTokenForm)
 import Web.HTML (window)
 import Web.HTML.Window (confirm)

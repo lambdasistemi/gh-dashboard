@@ -1,5 +1,5 @@
 -- | Domain types and JSON decode instances for the GitHub dashboard.
-module Types
+module Lib.Types
   ( Repo(..)
   , Issue(..)
   , PullRequest(..)

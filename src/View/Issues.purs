@@ -12,8 +12,8 @@ import Data.Set as Set
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Types (Issue(..))
-import View.DetailWidgets
+import Lib.Types (Issue(..))
+import Lib.UI.Widgets
   ( collectLabels
   , copyButton
   , hideButton
@@ -21,7 +21,7 @@ import View.DetailWidgets
   , refreshButton
   , renderLabelSelector
   )
-import View.Helpers
+import Lib.UI.Helpers
   ( detailHead
   , formatDate
   , linkButton

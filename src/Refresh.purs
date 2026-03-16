@@ -14,7 +14,7 @@ import Data.Maybe (Maybe(..))
 import Data.Traversable (traverse, traverse_)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
-import GitHub
+import Lib.GitHub
   ( fetchCheckRuns
   , fetchCommitStatuses
   , fetchPR
@@ -23,9 +23,9 @@ import GitHub
   , cachedRepo
   )
 import Halogen as H
-import RepoUtils (orderRepos, upsertRepo)
+import Lib.Util.Repo (orderRepos, upsertRepo)
 import Storage (saveRepoList)
-import Types (PullRequest(..), Repo(..))
+import Lib.Types (PullRequest(..), Repo(..))
 import View.Types (Action, State)
 
 -- | Load repos from cache without network requests.

@@ -1,5 +1,5 @@
 -- | Shared widgets for detail panel rows.
-module View.DetailWidgets
+module Lib.UI.Widgets
   ( refreshButton
   , copyButton
   , hideButton
