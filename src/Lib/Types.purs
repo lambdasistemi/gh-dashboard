@@ -15,6 +15,7 @@ module Lib.Types
   , StatusField
   , Page(..)
   , AgentSession
+  , AgentBranch
   ) where
 
 import Prelude
@@ -307,4 +308,12 @@ type AgentSession =
   , issue :: Int
   , prompt :: String
   , lastActivity :: String
+  }
+
+-- | A local issue branch as returned by the daemon.
+type AgentBranch =
+  { repo :: { owner :: String, name :: String }
+  , issue :: Int
+  , name :: String
+  , sync :: String
   }

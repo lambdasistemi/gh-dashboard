@@ -168,6 +168,7 @@ initialState =
   , terminalUrls: Map.empty
   , agentSessions: Map.empty
   , agentWorktrees: Set.empty
+  , agentBranches: Map.empty
   , sessionFilters: Set.empty
   , toasts: []
   , nextToastId: 0

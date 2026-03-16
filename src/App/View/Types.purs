@@ -11,7 +11,8 @@ import Data.Set (Set)
 import Lib.GitHub (RateLimit)
 import Data.Map (Map)
 import Lib.Types
-  ( AgentSession
+  ( AgentBranch
+  , AgentSession
   , Page
   , Project
   , ProjectItem
@@ -132,6 +133,7 @@ type State =
   , terminalUrls :: Map String String
   , agentSessions :: Map String AgentSession
   , agentWorktrees :: Set String
+  , agentBranches :: Map String AgentBranch
   , sessionFilters :: Set String
   , toasts :: Array Toast
   , nextToastId :: Int
