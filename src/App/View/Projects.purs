@@ -2,6 +2,7 @@
 -- | expandable table rows with lazy item loading.
 module App.View.Projects
   ( renderProjects
+  , renderItemRow
   ) where
 
 import Prelude
