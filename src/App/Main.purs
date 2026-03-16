@@ -480,7 +480,7 @@ handleAction = case _ of
   ToggleProjectRepoFilter repo ->
     handleToggleProjectRepoFilter repo
   SetItemStatus pid iid status ->
-    handleSetItemStatus pid iid status
+    handleSetItemStatus handleAction pid iid status
   SetNewItemTitle t ->
     handleSetNewItemTitle t
   SubmitNewItem projectId ->
