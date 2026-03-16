@@ -3,6 +3,7 @@
 module App.View.Projects
   ( renderProjects
   , renderItemRow
+  , renderRepoFilter
   ) where
 
 import Prelude

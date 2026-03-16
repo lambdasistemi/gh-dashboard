@@ -28,7 +28,7 @@ import Lib.Types
   , ProjectItem(..)
   , StatusField
   )
-import App.View.Projects (renderItemRow)
+import App.View.Projects (renderItemRow, renderRepoFilter)
 import App.View.Widgets (refreshButton)
 import App.View.Types (Action(..), State)
 
@@ -226,15 +226,8 @@ renderFilters state =
       let
         items = fromMaybe []
           (Map.lookup projId state.projectItems)
-        allRepos = sort $ nubEq $ map
-          ( \(ProjectItem pi) ->
-              fromMaybe "(no repo)" pi.repoName
-          )
-          items
         allLabels = sort $ nubEq $ items >>=
           \(ProjectItem pi) -> pi.labels
-        activeRepos = Set.size
-          state.projectRepoFilters
         activeLabels = Set.size
           state.kanbanLabelFilters
       in
@@ -250,53 +243,28 @@ renderFilters state =
               , refreshButton
                   (RefreshProjectItems projId)
               ]
+          , renderRepoFilter state items
           , HH.div
               [ HP.class_
-                  (HH.ClassName "filter-group")
+                  (HH.ClassName "detail-section")
               ]
-              [ HH.h3_
-                  [ HH.text
-                      ( "Repos"
-                          <>
-                            if activeRepos > 0 then
-                              " (" <> show activeRepos
-                                <> " active)"
-                            else ""
-                      )
-                  ]
-              , HH.div
+              [ HH.div
                   [ HP.class_
-                      (HH.ClassName "label-selector")
-                  ]
-                  ( map
-                      ( \repo ->
-                          HH.span
-                            [ HP.class_
-                                ( HH.ClassName
-                                    ( "label-tag clickable"
-                                        <>
-                                          if
-                                            Set.member repo
-                                              state.projectRepoFilters then " active"
-                                          else ""
-                                    )
-                                )
-                            , HE.onClick \_ ->
-                                ToggleProjectRepoFilter
-                                  repo
-                            ]
-                            [ HH.text repo ]
+                      ( HH.ClassName
+                          "detail-heading clickable"
                       )
-                      allRepos
-                  )
-              ]
-          , HH.div
-              [ HP.class_
-                  (HH.ClassName "filter-group")
-              ]
-              [ HH.h3_
+                  , HE.onClick \_ ->
+                      ToggleItem "kanban-label-filter"
+                  ]
                   [ HH.text
-                      ( "Labels"
+                      ( ( if
+                            Set.member
+                              "kanban-label-filter"
+                              state.expandedItems
+                          then "\x25BE "
+                          else "\x25B8 "
+                        )
+                          <> "Labels"
                           <>
                             if activeLabels > 0 then
                               " (" <> show activeLabels
@@ -304,7 +272,12 @@ renderFilters state =
                             else ""
                       )
                   ]
-              , if null allLabels then
+              , if
+                  not
+                    ( Set.member "kanban-label-filter"
+                        state.expandedItems
+                    ) then HH.text ""
+                else if null allLabels then
                   HH.p
                     [ HP.class_
                         (HH.ClassName "muted")
@@ -324,7 +297,9 @@ renderFilters state =
                                           <>
                                             if
                                               Set.member lbl
-                                                state.kanbanLabelFilters then " active"
+                                                state.kanbanLabelFilters
+                                            then
+                                              " active"
                                             else ""
                                       )
                                   )
