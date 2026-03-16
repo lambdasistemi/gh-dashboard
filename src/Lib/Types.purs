@@ -14,6 +14,7 @@ module Lib.Types
   , ProjectItem(..)
   , StatusField
   , Page(..)
+  , AgentSession
   ) where
 
 import Prelude
@@ -295,4 +296,13 @@ type RepoDetail =
   , workflowJobs :: Map String (Array WorkflowJob)
   , workflowShaIndex :: Int
   , workflowShaPRs :: Map String CommitPR
+  }
+
+-- | An agent session as returned by the daemon.
+type AgentSession =
+  { state :: String
+  , createdAt :: String
+  , worktree :: String
+  , repo :: String
+  , issue :: Int
   }

@@ -320,8 +320,8 @@ applySessionFilter state items =
                   (repo <> "#" <> show n)
               _, _ -> Nothing
             sess = k >>= \key ->
-              Map.lookup key
-                state.agentSessions
+              map _.state
+                (Map.lookup key state.agentSessions)
             hasWorktree = case k of
               Just key ->
                 Set.member key
@@ -627,7 +627,8 @@ renderItemRow state projId mSf (ProjectItem item) =
       Just k -> Set.member k state.launchedItems
       Nothing -> false
     sessionState = case itemKey of
-      Just k -> Map.lookup k state.agentSessions
+      Just k -> map _.state
+        (Map.lookup k state.agentSessions)
       Nothing -> Nothing
     hasWorktree = case itemKey of
       Just k ->

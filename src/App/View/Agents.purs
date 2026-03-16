@@ -18,10 +18,11 @@ import Halogen.HTML as HH
 import Halogen.HTML.Core (AttrName(..))
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Lib.Types (AgentSession)
+import Lib.UI.Helpers (formatDateTime, termElementId)
 import Lib.UI.Widgets (renderLabelSelector)
 import App.View.Widgets (refreshButton)
 import App.View.Types (Action(..), State)
-import Lib.UI.Helpers (termElementId)
 
 -- | Main agents view — shows all agent sessions
 -- | grouped by status.
@@ -56,7 +57,7 @@ renderAgentHeader state =
                   (HH.ClassName "muted")
               ]
               [ HH.text
-                  "Set agent server URL →"
+                  "Set agent server URL \x2192"
               ]
           else HH.text ""
         ]
@@ -97,13 +98,14 @@ renderSessionList
 renderSessionList state =
   let
     entries = Map.toUnfoldable state.agentSessions
-      :: Array (Tuple String String)
+      :: Array (Tuple String AgentSession)
     filtered =
       if Set.isEmpty state.sessionFilters then
         entries
       else filter
         ( \(Tuple _ s) ->
-            Set.member s state.sessionFilters
+            Set.member s.state
+              state.sessionFilters
         )
         entries
     worktreeOnly = Set.toUnfoldable
@@ -126,7 +128,9 @@ renderSessionList state =
                 [ HP.class_
                     (HH.ClassName "agents-section-title")
                 ]
-                [ HH.text "Worktrees (no session)" ]
+                [ HH.text
+                    "Worktrees (no session)"
+                ]
             , HH.div_
                 ( map renderWorktreeRow worktreeOnly
                 )
@@ -138,9 +142,9 @@ renderSessionList state =
 renderSessionRow
   :: forall w
    . State
-  -> Tuple String String
+  -> Tuple String AgentSession
   -> HH.HTML w Action
-renderSessionRow state (Tuple key status) =
+renderSessionRow state (Tuple key session) =
   let
     hasTerminal =
       Set.member key state.launchedItems
@@ -151,7 +155,7 @@ renderSessionRow state (Tuple key status) =
       [ HP.class_
           ( HH.ClassName
               ( "agent-row agent-"
-                  <> statusClass status
+                  <> statusClass session.state
               )
           )
       ]
@@ -163,11 +167,13 @@ renderSessionRow state (Tuple key status) =
               [ HP.class_
                   ( HH.ClassName
                       ( "agent-status-badge badge-"
-                          <> statusClass status
+                          <> statusClass session.state
                       )
                   )
               ]
-              [ HH.text (statusIcon status) ]
+              [ HH.text
+                  (statusIcon session.state)
+              ]
           , HH.span
               [ HP.class_
                   (HH.ClassName "agent-key")
@@ -177,16 +183,31 @@ renderSessionRow state (Tuple key status) =
               [ HP.class_
                   (HH.ClassName "agent-status-text")
               ]
-              [ HH.text status ]
+              [ HH.text session.state ]
+          , if session.createdAt /= "" then
+              HH.span
+                [ HP.class_
+                    (HH.ClassName "agent-time")
+                , HP.title session.createdAt
+                ]
+                [ HH.text
+                    (formatDateTime session.createdAt)
+                ]
+            else HH.text ""
           , if hasWorktree then
               HH.span
                 [ HP.class_
                     (HH.ClassName "agent-badge")
-                , HP.title "Has worktree"
+                , HP.title
+                    ( if session.worktree /= "" then
+                        session.worktree
+                      else "Has worktree"
+                    )
                 ]
                 [ HH.text "\x1F333" ]
             else HH.text ""
-          , renderSessionActions key hasTerminal
+          , renderSessionActions key
+              hasTerminal
           ]
       , if hasTerminal then
           HH.div
@@ -290,7 +311,7 @@ collectStatuses
   -> Array { name :: String, count :: Int }
 collectStatuses state =
   let
-    allStatuses = fromFoldable
+    allStatuses = map _.state $ fromFoldable
       (Map.values state.agentSessions)
     unique = sort $ Set.toUnfoldable
       $ Set.fromFoldable allStatuses
@@ -300,43 +321,47 @@ collectStatuses state =
           { name: s
           , count:
               length
-                ( filter (_ == s)
-                    allStatuses
-                )
+                (filter (_ == s) allStatuses)
           }
       )
       unique
 
 -- | Map status to CSS class.
 statusClass :: String -> String
+statusClass "creating" = "creating"
 statusClass "running" = "running"
-statusClass "waiting" = "waiting"
-statusClass "completed" = "completed"
-statusClass "error" = "error"
-statusClass _ = "unknown"
+statusClass "attached" = "running"
+statusClass "stopping" = "stopping"
+statusClass s
+  | isFailedStatus s = "error"
+  | otherwise = "unknown"
 
 -- | Map status to icon.
 statusIcon :: String -> String
+statusIcon "creating" = "\x25D4"
 statusIcon "running" = "\x25CF"
-statusIcon "waiting" = "\x25D4"
-statusIcon "completed" = "\x2713"
-statusIcon "error" = "\x2717"
-statusIcon _ = "\x25CB"
+statusIcon "attached" = "\x25CF"
+statusIcon "stopping" = "\x25D4"
+statusIcon s
+  | isFailedStatus s = "\x2717"
+  | otherwise = "\x25CB"
+
+-- | Check if a status string is a "failed: ..." state.
+isFailedStatus :: String -> Boolean
+isFailedStatus s =
+  Data.String.take 7 s == "failed:"
 
 -- | Parse "owner/repo#issue" into components.
 parseKey
   :: String
   -> Maybe { repo :: String, issue :: Int }
 parseKey key =
-  let
-    parts = splitAt '#' key
-  in
-    case parts of
-      Just { before: repo, after: issueStr } ->
-        case Int.fromString issueStr of
-          Just n -> Just { repo, issue: n }
-          Nothing -> Nothing
-      Nothing -> Nothing
+  case splitAt '#' key of
+    Just { before: repo, after: issueStr } ->
+      case Int.fromString issueStr of
+        Just n -> Just { repo, issue: n }
+        Nothing -> Nothing
+    Nothing -> Nothing
 
 -- | Split string at first occurrence of char.
 splitAt
@@ -355,4 +380,3 @@ splitAt c str =
           , after: Data.String.drop (idx + 1) str
           }
       Nothing -> Nothing
-

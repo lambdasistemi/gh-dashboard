@@ -199,8 +199,8 @@ renderIssueRow state isHidden (Issue i) =
         <> show i.number
     hasTerminal = Set.member launchKey
       state.launchedItems
-    sessionState = Map.lookup launchKey
-      state.agentSessions
+    sessionState = map _.state
+      (Map.lookup launchKey state.agentSessions)
     hasWorktree = Set.member launchKey
       state.agentWorktrees
     rowClass = "repo-row"
