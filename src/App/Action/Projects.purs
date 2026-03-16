@@ -54,10 +54,14 @@ import App.Action.Common
   )
 import Data.Either (Either(..))
 import Data.Array (filter, find, null)
+import Data.HTTP.Method (Method(..))
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (Pattern(..), indexOf, toLower)
-import Effect.Aff (Aff)
+import Data.String (split) as Str
+import Effect.Aff (Aff, try)
+import Effect.Exception (message)
+import Fetch (fetch)
 import Lib.FFI.Dialog (confirmDialog)
 import Lib.GitHub.GraphQL
   ( addDraftItem
@@ -76,7 +80,7 @@ import Lib.Types
   , Project(..)
   , ProjectItem(..)
   )
-import App.View.Types (Action(..), State)
+import App.View.Types (Action(..), State, ToastLevel(..))
 
 handleRefreshProjects
   :: forall o. Dispatch o -> HalogenAction o
@@ -215,12 +219,32 @@ handleToggleProjectRepoFilter repo = do
 
 handleSetItemStatus
   :: forall o
-   . String
+   . Dispatch o
+  -> String
   -> String
   -> String
   -> HalogenAction o
-handleSetItemStatus projectId itemId newStatus = do
+handleSetItemStatus dispatch projectId itemId newStatus = do
   st <- H.get
+  -- Find the item to get repo/issue info
+  let
+    mItem = do
+      items <- Map.lookup projectId st.projectItems
+      find (\(ProjectItem pi) -> pi.itemId == itemId)
+        items
+    mRepoIssue = do
+      ProjectItem pi <- mItem
+      repo <- pi.repoName
+      n <- pi.number
+      Just { repo, issue: n }
+    oldStatus = case mItem of
+      Just (ProjectItem pi) ->
+        fromMaybe "" pi.status
+      Nothing -> ""
+    leavingWIP = oldStatus == "WIP"
+      && newStatus /= "WIP"
+    enteringWIP = oldStatus /= "WIP"
+      && newStatus == "WIP"
   case
     Map.lookup projectId
       st.projectStatusFields
@@ -258,6 +282,7 @@ handleSetItemStatus projectId itemId newStatus = do
                       updated
                       st.projectItems
                   }
+          -- Update GitHub Project status
           result <- H.liftAff $
             updateItemStatus st.token projectId
               itemId
@@ -268,6 +293,73 @@ handleSetItemStatus projectId itemId newStatus = do
               H.modify_ _
                 { error = Just err }
             Right _ -> pure unit
+          -- Agent-daemon side effects
+          when (st.agentServer /= "") do
+            case mRepoIssue of
+              Nothing -> pure unit
+              Just { repo, issue } -> do
+                let
+                  parts = Str.split
+                    (Pattern "/") repo
+                  repoName = case parts of
+                    [ _, name ] -> name
+                    _ -> repo
+                -- Leaving WIP: stop session + delete worktree
+                when leavingWIP do
+                  let
+                    sid = repoName <> "-"
+                      <> show issue
+                  _ <- H.liftAff $ try $
+                    fetch
+                      ( st.agentServer
+                          <> "/sessions/"
+                          <> sid
+                      )
+                      { method: DELETE }
+                  pure unit
+                -- Entering WIP: create worktree via session launch
+                when enteringWIP do
+                  let
+                    owner = case parts of
+                      [ o, _ ] -> o
+                      _ -> ""
+                    body =
+                      "{\"repo\":{\"owner\":\""
+                        <> owner
+                        <> "\",\"name\":\""
+                        <> repoName
+                        <> "\"},\"issue\":"
+                        <> show issue
+                        <> "}"
+                  launchResult <- H.liftAff $ try do
+                    resp <- fetch
+                      ( st.agentServer
+                          <> "/sessions"
+                      )
+                      { method: POST
+                      , headers:
+                          { "Content-Type":
+                              "application/json"
+                          }
+                      , body
+                      }
+                    resp.text
+                  case launchResult of
+                    Left err ->
+                      dispatch
+                        ( ShowToast
+                            ( "Agent error: "
+                                <> message err
+                            )
+                            ToastError
+                        )
+                    Right _ ->
+                      dispatch
+                        ( ShowToast
+                            "Session launched"
+                            ToastInfo
+                        )
+                dispatch RefreshAgentSessions
 
 handleSetNewItemTitle
   :: forall o. String -> HalogenAction o
