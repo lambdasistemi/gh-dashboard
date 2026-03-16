@@ -359,6 +359,12 @@ parseSession json = do
       (hush (obj .: "createdAt") :: Maybe String)
     worktree = fromMaybe ""
       (hush (obj .: "worktree") :: Maybe String)
+    prompt = fromMaybe ""
+      (hush (obj .: "prompt") :: Maybe String)
+    lastActivity = fromMaybe ""
+      ( hush (obj .: "lastActivity")
+          :: Maybe String
+      )
     key = owner <> "/" <> name <> "#" <> show issue
     session =
       { state
@@ -366,6 +372,8 @@ parseSession json = do
       , worktree
       , repo: owner <> "/" <> name
       , issue
+      , prompt
+      , lastActivity
       }
   Just $ Tuple key session
 

@@ -305,4 +305,6 @@ type AgentSession =
   , worktree :: String
   , repo :: String
   , issue :: Int
+  , prompt :: String
+  , lastActivity :: String
   }

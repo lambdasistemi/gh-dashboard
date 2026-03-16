@@ -209,6 +209,27 @@ renderSessionRow state (Tuple key session) =
           , renderSessionActions key
               hasTerminal
           ]
+      , if session.prompt /= "" then
+          HH.div
+            [ HP.class_
+                (HH.ClassName "agent-prompt")
+            ]
+            [ HH.text session.prompt ]
+        else HH.text ""
+      , if session.lastActivity /= "" then
+          HH.div
+            [ HP.class_
+                (HH.ClassName "agent-activity")
+            ]
+            [ HH.span
+                [ HP.class_
+                    (HH.ClassName "agent-activity-label")
+                ]
+                [ HH.text "last activity " ]
+            , HH.text
+                (formatDateTime session.lastActivity)
+            ]
+        else HH.text ""
       , if hasTerminal then
           HH.div
             [ HP.class_
