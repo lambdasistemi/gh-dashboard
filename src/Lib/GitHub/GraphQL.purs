@@ -33,6 +33,7 @@ module Lib.GitHub.GraphQL
   , updateDraftItem
   , deleteProjectItem
   , renameProject
+  , createKanbanProject
   ) where
 
 import Prelude
@@ -51,7 +52,7 @@ import Data.Argonaut.Parser (jsonParser)
 import Data.Array (catMaybes, head, mapMaybe)
 import Data.Array (head) as Array
 import Data.Bifunctor (lmap)
-import Data.Either (Either(..))
+import Data.Either (Either(..), hush)
 import Data.Maybe (Maybe(..), isNothing)
 import Data.Array (intercalate)
 import Data.Traversable (traverse)
@@ -707,3 +708,70 @@ parseStatusField json =
                 }
             Left _ -> Nothing
         _, _ -> Nothing
+
+-- | Create a new project named "Kanban" and return
+-- | its node ID. The user must then configure the
+-- | Status field with Backlog/WIP/Done options in
+-- | the GitHub UI.
+createKanbanProject
+  :: String -> Aff (Either String String)
+createKanbanProject token = do
+  viewerResult <- ghGraphQL token
+    "query { viewer { id } }"
+    jsonEmptyObject
+  case viewerResult of
+    Left err -> pure $ Left err
+    Right viewerJson -> do
+      let
+        mOwnerId = do
+          obj <- toObject viewerJson
+          dataObj <- hush (obj .: "data")
+            >>= toObject
+          viewerObj <- hush (dataObj .: "viewer")
+            >>= toObject
+          hush (viewerObj .: "id") :: Maybe String
+      case mOwnerId of
+        Nothing ->
+          pure $ Left "Could not get viewer ID"
+        Just ownerId -> do
+          let
+            vars = "ownerId" := ownerId
+              ~> "title"
+                := ("Kanban" :: String)
+              ~> jsonEmptyObject
+          createResult <- ghGraphQL token
+            createProjectQuery
+            vars
+          case createResult of
+            Left err -> pure $ Left err
+            Right json -> do
+              let
+                mProjId = do
+                  obj <- toObject json
+                  dataObj <- hush (obj .: "data")
+                    >>= toObject
+                  createObj <-
+                    hush
+                      (dataObj .: "createProjectV2")
+                      >>= toObject
+                  projObj <-
+                    hush (createObj .: "projectV2")
+                      >>= toObject
+                  hush (projObj .: "id")
+                    :: Maybe String
+              case mProjId of
+                Nothing ->
+                  pure $
+                    Left "Could not parse project ID"
+                Just projId ->
+                  pure $ Right projId
+
+createProjectQuery :: String
+createProjectQuery =
+  """
+  mutation($ownerId: ID!, $title: String!) {
+    createProjectV2(
+      input: { ownerId: $ownerId, title: $title }
+    ) { projectV2 { id } }
+  }
+  """

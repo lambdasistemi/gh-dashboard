@@ -68,14 +68,44 @@ renderProjectSetup state =
           , refreshButton RefreshProjects
           ]
       else
-        HH.div
-          [ HP.class_
-              (HH.ClassName "kanban-project-list")
+        HH.div_
+          [ HH.div
+              [ HP.class_
+                  (HH.ClassName "kanban-project-list")
+              ]
+              ( map
+                  ( renderProjectOption state )
+                  state.projects
+              )
+          , HH.div
+              [ HP.class_
+                  (HH.ClassName "kanban-create")
+              ]
+              [ HH.p
+                  [ HP.class_
+                      (HH.ClassName "muted")
+                  ]
+                  [ HH.text
+                      "Or create a new project:"
+                  ]
+              , HH.button
+                  [ HE.onClick \_ ->
+                      CreateKanbanProject
+                  , HP.class_
+                      (HH.ClassName "btn")
+                  ]
+                  [ HH.text
+                      "Create Kanban project"
+                  ]
+              , HH.p
+                  [ HP.class_
+                      (HH.ClassName "muted")
+                  ]
+                  [ HH.text
+                      "After creation, rename the default statuses to Backlog, WIP, Done in GitHub."
+                  ]
+              ]
           ]
-          ( map
-              ( renderProjectOption state )
-              state.projects
-          )
     ]
 
 -- | A single project option in the setup list.

@@ -80,6 +80,7 @@ data Action
   | SetRenameProjectTitle String
   | SubmitRenameProject String String
   | SetKanbanProject String
+  | CreateKanbanProject
   | LaunchAgent String String Int
   | DetachAgent String Int
   | StopAgent String Int
