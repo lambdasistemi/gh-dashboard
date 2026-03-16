@@ -323,6 +323,22 @@ renderWorktreeRow key =
             , HP.title "Has worktree"
             ]
             [ HH.text "\x1F333" ]
+        , case parseKey key of
+            Just { repo, issue } ->
+              HH.div
+                [ HP.class_
+                    (HH.ClassName "agent-actions")
+                ]
+                [ HH.button
+                    [ HE.onClick \_ ->
+                        LaunchAgent key repo issue
+                    , HP.class_
+                        (HH.ClassName "btn-hide")
+                    , HP.title "Start session"
+                    ]
+                    [ HH.text "\x25B6" ]
+                ]
+            Nothing -> HH.text ""
         ]
     ]
 
