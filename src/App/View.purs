@@ -95,7 +95,8 @@ renderDashboard
   -> Array Repo
   -> HH.HTML w Action
 renderDashboard state repos =
-  HH.div_
+  HH.div
+    [ HP.style "padding: 0.5em;" ]
     [ renderToasts state.toasts
     , renderToolbar state
     , case state.error of
