@@ -23,6 +23,7 @@ module App.Main where
 
 import Prelude
 
+import Data.Either (Either(..))
 import App.Action.Agent
   ( handleDetachAgent
   , handleLaunchAgent
@@ -86,6 +87,7 @@ import Halogen.VDom.Driver (runUI)
 import Lib.GitHub.GraphQL
   ( cachedUserProjects
   , cachedProjectItems
+  , createKanbanProject
   )
 import App.Refresh (doRefresh, loadCachedRepos)
 import Lib.Util.Repo (applyFilter)
@@ -517,6 +519,16 @@ handleAction = case _ of
     H.modify_ _ { kanbanProject = Just projId }
     liftEffect $ saveKanbanProject projId
     handleAction (RefreshProjectItems projId)
+  CreateKanbanProject -> do
+    st <- H.get
+    result <- H.liftAff $
+      createKanbanProject st.token
+    case result of
+      Left err ->
+        H.modify_ _ { error = Just err }
+      Right projId -> do
+        handleAction RefreshProjects
+        handleAction (SetKanbanProject projId)
   SetAgentServer url ->
     handleSetAgentServer url
   RefreshAgentSessions ->
