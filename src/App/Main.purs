@@ -230,6 +230,7 @@ handleAction = case _ of
           { token = tok, hasToken = true }
         handleAction RefreshAgentSessions
         case vs.currentPage of
+          AgentsPage -> pure unit
           ReposPage -> do
             -- Show cached repos instantly
             _ <- loadCachedRepos
@@ -424,6 +425,7 @@ handleAction = case _ of
     handleAction RefreshAgentSessions
     st <- H.get
     case page of
+      AgentsPage -> pure unit
       ProjectsPage ->
         when (null st.projects) do
           handleAction RefreshProjects

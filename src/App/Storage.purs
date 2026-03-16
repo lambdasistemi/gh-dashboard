@@ -135,6 +135,7 @@ saveViewState vs = do
     obj = FO.fromFoldable
       [ "currentPage" /\ encodeJson
           ( case vs.currentPage of
+              AgentsPage -> "AgentsPage"
               ReposPage -> "ReposPage"
               ProjectsPage -> "ProjectsPage"
           )
@@ -179,6 +180,8 @@ loadViewState = do
                     lmap printJsonDecodeError
                       (obj .: "currentPage")
                     of
+                    Right "AgentsPage" ->
+                      AgentsPage
                     Right "ProjectsPage" ->
                       ProjectsPage
                     _ -> ReposPage
