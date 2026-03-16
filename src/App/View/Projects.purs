@@ -656,24 +656,25 @@ renderItemRow state projId mSf (ProjectItem item) =
         , HP.class_ (HH.ClassName rowClass)
         ]
         [ HH.td_
-            ( case item.repoName, item.number of
-                Just repo, Just n ->
-                  [ refreshButton
-                      ( RefreshProjectItem
-                          projId
-                          repo
-                          n
-                      )
-                  ]
-                    <>
-                      if isWIP then
-                        launchButton
-                          state.launchedItems
-                          key
-                          repo
-                          n
-                      else []
-                _, _ -> []
+            ( ( case item.repoName, item.number of
+                  Just repo, Just n ->
+                    [ refreshButton
+                        ( RefreshProjectItem
+                            projId
+                            repo
+                            n
+                        )
+                    ]
+                      <>
+                        if isWIP then
+                          launchButton
+                            state.launchedItems
+                            key
+                            repo
+                            n
+                        else []
+                  _, _ -> []
+              )
                 <>
                   case item.url of
                     Just url ->
