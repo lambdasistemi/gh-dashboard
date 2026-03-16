@@ -1,10 +1,7 @@
--- | Shared widgets for detail panel rows.
+-- | Reusable UI widgets that don't depend on
+-- | app-specific types.
 module Lib.UI.Widgets
-  ( refreshButton
-  , copyButton
-  , hideButton
-  , launchButton
-  , collectLabels
+  ( collectLabels
   , renderLabelSelector
   ) where
 
@@ -14,96 +11,8 @@ import Data.Array (concatMap, filter, length, sort, sortBy)
 import Data.Function (on)
 import Data.Set as Set
 import Halogen.HTML as HH
-import Halogen.HTML.Core (AttrName(..))
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import View.Types (Action(..))
-
--- | Refresh button for a single item.
-refreshButton
-  :: forall w. Action -> HH.HTML w Action
-refreshButton action =
-  HH.button
-    [ HE.onClick \_ -> action
-    , HP.class_ (HH.ClassName "btn-hide")
-    , HP.title "Refresh"
-    , HP.attr (AttrName "onclick")
-        "event.stopPropagation()"
-    ]
-    [ HH.text "\x21BB" ]
-
--- | Copy title to clipboard button.
-copyButton
-  :: forall w. String -> HH.HTML w Action
-copyButton text =
-  HH.button
-    [ HE.onClick \_ -> CopyText text
-    , HP.class_ (HH.ClassName "btn-hide")
-    , HP.title "Copy title"
-    , HP.attr (AttrName "onclick")
-        "event.stopPropagation()"
-    ]
-    [ HH.text "\x2398" ]
-
--- | Hide/unhide toggle button.
-hideButton
-  :: forall w. String -> Boolean -> HH.HTML w Action
-hideButton url isHidden =
-  HH.button
-    [ HE.onClick \_ -> HideItem url
-    , HP.class_ (HH.ClassName "btn-hide")
-    , HP.title
-        (if isHidden then "Unhide" else "Hide")
-    ]
-    [ HH.text
-        (if isHidden then "\x25C9" else "\x25CC")
-    ]
-
--- | Launch/detach/stop buttons for an issue agent.
-launchButton
-  :: forall w
-   . Set.Set String
-  -> String
-  -> String
-  -> Int
-  -> Array (HH.HTML w Action)
-launchButton launched toggleKey repoName issueNum =
-  let
-    key = repoName <> "#" <> show issueNum
-    isActive = Set.member key launched
-  in
-    if isActive then
-      [ HH.button
-          [ HE.onClick \_ ->
-              DetachAgent repoName issueNum
-          , HP.class_ (HH.ClassName "btn-hide")
-          , HP.title "Detach terminal"
-          , HP.attr (AttrName "onclick")
-              "event.stopPropagation()"
-          ]
-          [ HH.text "\x23CF" ]
-      , HH.button
-          [ HE.onClick \_ ->
-              StopAgent repoName issueNum
-          , HP.class_ (HH.ClassName "btn-hide")
-          , HP.title "Stop agent"
-          , HP.attr (AttrName "onclick")
-              "event.stopPropagation()"
-          ]
-          [ HH.text "\x23F9" ]
-      ]
-    else
-      [ HH.button
-          [ HE.onClick \_ ->
-              LaunchAgent toggleKey repoName
-                issueNum
-          , HP.class_ (HH.ClassName "btn-hide")
-          , HP.title "Launch agent"
-          , HP.attr (AttrName "onclick")
-              "event.stopPropagation()"
-          ]
-          [ HH.text "\x25B6" ]
-      ]
 
 -- | Collect unique label names with counts from items.
 collectLabels
@@ -125,11 +34,11 @@ collectLabels items =
 
 -- | Vertical label selector with multi-select.
 renderLabelSelector
-  :: forall w
+  :: forall w action
    . Set.Set String
-  -> (String -> Action)
+  -> (String -> action)
   -> Array { name :: String, count :: Int }
-  -> HH.HTML w Action
+  -> HH.HTML w action
 renderLabelSelector active toAction labels =
   HH.div
     [ HP.class_

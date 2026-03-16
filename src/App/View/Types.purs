@@ -1,5 +1,5 @@
 -- | View types — Action and State shared across view modules.
-module View.Types
+module App.View.Types
   ( Action(..)
   , State
   , Toast

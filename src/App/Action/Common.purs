@@ -19,7 +19,7 @@
 -- | - `emptyDetail`: a blank `RepoDetail` record,
 -- |   used as the initial value when expanding a repo
 -- |   for the first time.
-module Action.Common
+module App.Action.Common
   ( Dispatch
   , HalogenAction
   , toggleSet
@@ -39,9 +39,9 @@ import Data.String (Pattern(..), Replacement(..), replaceAll)
 import Effect.Class (liftEffect)
 import Halogen as H
 import Effect.Aff (Aff)
-import Storage (saveViewState)
+import App.Storage (saveViewState)
 import Lib.Types (RepoDetail)
-import View.Types (Action, State)
+import App.View.Types (Action, State)
 
 -- | A function that dispatches an `Action` within the
 -- | Halogen monad. Passed to handler modules so they

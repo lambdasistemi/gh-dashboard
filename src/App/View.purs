@@ -1,6 +1,6 @@
 -- | View — top-level render functions and shared types.
-module View
-  ( module View.Types
+module App.View
+  ( module App.View.Types
   , renderTokenForm
   , renderDashboard
   ) where
@@ -14,9 +14,9 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Lib.Types (Page(..), Repo)
-import View.Projects (renderProjects)
-import View.RepoTable (renderRepoTable)
-import View.Types (Action(..), State, Toast, ToastLevel(..))
+import App.View.Projects (renderProjects)
+import App.View.RepoTable (renderRepoTable)
+import App.View.Types (Action(..), State, Toast, ToastLevel(..))
 
 -- | Token input form shown when no token is set.
 renderTokenForm
