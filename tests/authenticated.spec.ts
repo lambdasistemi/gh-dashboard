@@ -22,12 +22,55 @@ test.describe("Dashboard (authenticated)", () => {
     await expect(page.locator(".toolbar")).toBeVisible();
   });
 
-  test("shows Repos and Projects tabs", async ({ page }) => {
+  test("shows Agents, Repos and Projects tabs", async ({
+    page,
+  }) => {
+    await expect(
+      page.locator(".tab-btn", { hasText: "Agents" })
+    ).toBeVisible();
     await expect(
       page.locator(".tab-btn", { hasText: "Repos" })
     ).toBeVisible();
     await expect(
       page.locator(".tab-btn", { hasText: "Projects" })
+    ).toBeVisible();
+  });
+
+  test("can switch to Agents tab", async ({ page }) => {
+    const agentsBtn = page.locator(".tab-btn", {
+      hasText: "Agents",
+    });
+    await agentsBtn.click();
+    await expect(agentsBtn).toHaveClass(/active/);
+    await expect(
+      page.locator(".agents-view")
+    ).toBeVisible();
+  });
+
+  test("Agents tab shows empty state without agent server", async ({
+    page,
+  }) => {
+    const agentsBtn = page.locator(".tab-btn", {
+      hasText: "Agents",
+    });
+    await agentsBtn.click();
+    await expect(
+      page.locator(".agents-empty")
+    ).toBeVisible();
+    await expect(
+      page.locator("text=Configure an agent server")
+    ).toBeVisible();
+  });
+
+  test("Agents tab shows session header", async ({
+    page,
+  }) => {
+    const agentsBtn = page.locator(".tab-btn", {
+      hasText: "Agents",
+    });
+    await agentsBtn.click();
+    await expect(
+      page.locator("text=Agent Sessions")
     ).toBeVisible();
   });
 

@@ -6,7 +6,7 @@ module App.View.Agents
 
 import Prelude
 
-import Data.Array (filter, length, null, sort)
+import Data.Array (filter, fromFoldable, length, null, sort)
 import Data.Int (fromString) as Int
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
@@ -290,8 +290,8 @@ collectStatuses
   -> Array { name :: String, count :: Int }
 collectStatuses state =
   let
-    allStatuses =
-      Map.values state.agentSessions
+    allStatuses = fromFoldable
+      (Map.values state.agentSessions)
     unique = sort $ Set.toUnfoldable
       $ Set.fromFoldable allStatuses
   in
@@ -301,7 +301,7 @@ collectStatuses state =
           , count:
               length
                 ( filter (_ == s)
-                    (Map.values state.agentSessions)
+                    allStatuses
                 )
           }
       )
