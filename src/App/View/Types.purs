@@ -79,6 +79,7 @@ data Action
   | StartRenameProject String String
   | SetRenameProjectTitle String
   | SubmitRenameProject String String
+  | SetKanbanProject String
   | LaunchAgent String String Int
   | DetachAgent String Int
   | StopAgent String Int
@@ -127,6 +128,7 @@ type State =
   , editItemTitle :: String
   , editingProject :: Maybe String
   , editProjectTitle :: String
+  , kanbanProject :: Maybe String
   , agentServer :: String
   , launchedItems :: Set String
   , terminalKeys :: Map String String
