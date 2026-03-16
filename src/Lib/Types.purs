@@ -252,7 +252,12 @@ instance DecodeJson WorkflowJob where
         }
 
 -- | Which top-level page is active.
-data Page = AgentsPage | ReposPage | ProjectsPage
+data Page
+  = BacklogPage
+  | WIPPage
+  | DonePage
+  | ReposPage
+  | ProjectsPage
 
 derive instance eqPage :: Eq Page
 

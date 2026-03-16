@@ -14,7 +14,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Lib.Types (Page(..), Repo)
-import App.View.Agents (renderAgents)
+import App.View.Kanban (renderKanban)
 import App.View.Projects (renderProjects)
 import App.View.RepoTable (renderRepoTable)
 import App.View.Types (Action(..), State, Toast, ToastLevel(..))
@@ -105,7 +105,9 @@ renderDashboard state repos =
             [ HH.text err ]
         Nothing -> HH.text ""
     , case state.currentPage of
-        AgentsPage -> renderAgents state
+        BacklogPage -> renderKanban state
+        WIPPage -> renderKanban state
+        DonePage -> renderKanban state
         ReposPage ->
           HH.div_
             ( ( if state.showAddRepo then
@@ -162,18 +164,46 @@ renderToolbar state =
         [ HP.class_ (HH.ClassName "tab-bar") ]
         [ HH.button
             [ HE.onClick \_ ->
-                SwitchPage AgentsPage
+                SwitchPage BacklogPage
             , HP.class_
                 ( HH.ClassName
                     ( "tab-btn"
                         <> activeIf
                           ( state.currentPage
-                              == AgentsPage
+                              == BacklogPage
                           )
                     )
                 )
             ]
-            [ HH.text "Agents" ]
+            [ HH.text "Backlog" ]
+        , HH.button
+            [ HE.onClick \_ ->
+                SwitchPage WIPPage
+            , HP.class_
+                ( HH.ClassName
+                    ( "tab-btn"
+                        <> activeIf
+                          ( state.currentPage
+                              == WIPPage
+                          )
+                    )
+                )
+            ]
+            [ HH.text "WIP" ]
+        , HH.button
+            [ HE.onClick \_ ->
+                SwitchPage DonePage
+            , HP.class_
+                ( HH.ClassName
+                    ( "tab-btn"
+                        <> activeIf
+                          ( state.currentPage
+                              == DonePage
+                          )
+                    )
+                )
+            ]
+            [ HH.text "Done" ]
         , HH.button
             [ HE.onClick \_ ->
                 SwitchPage ReposPage

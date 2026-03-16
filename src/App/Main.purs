@@ -93,9 +93,11 @@ import App.Storage
   ( clearAll
   , clearToken
   , loadAgentServer
+  , loadKanbanProject
   , loadRepoList
   , loadToken
   , loadViewState
+  , saveKanbanProject
   , saveToken
   )
 import Lib.Types (Page(..))
@@ -162,6 +164,7 @@ initialState =
   , editItemTitle: ""
   , editingProject: Nothing
   , editProjectTitle: ""
+  , kanbanProject: Nothing
   , agentServer: ""
   , launchedItems: Set.empty
   , terminalKeys: Map.empty
@@ -206,10 +209,12 @@ handleAction = case _ of
     saved <- H.liftAff loadToken
     repoList <- liftEffect loadRepoList
     agentUrl <- liftEffect loadAgentServer
+    kbProject <- liftEffect loadKanbanProject
     vs <- liftEffect loadViewState
     liftEffect $ setBodyTheme vs.darkTheme
     H.modify_ _
       { repoList = repoList
+      , kanbanProject = kbProject
       , agentServer = agentUrl
       , hiddenItems = vs.hiddenItems
       , darkTheme = vs.darkTheme
@@ -230,8 +235,28 @@ handleAction = case _ of
         H.modify_ _
           { token = tok, hasToken = true }
         handleAction RefreshAgentSessions
+        -- Load kanban project items if configured
+        case kbProject of
+          Just projId -> do
+            cachedItems <- H.liftAff $
+              cachedProjectItems projId
+            case cachedItems of
+              Just res ->
+                H.modify_ _
+                  { projectItems =
+                      Map.insert projId
+                        res.items
+                        Map.empty
+                  , projectItemsLoading = false
+                  }
+              Nothing -> pure unit
+            handleAction
+              (RefreshProjectItems projId)
+          Nothing -> pure unit
         case vs.currentPage of
-          AgentsPage -> pure unit
+          BacklogPage -> pure unit
+          WIPPage -> pure unit
+          DonePage -> pure unit
           ReposPage -> do
             -- Show cached repos instantly
             _ <- loadCachedRepos
@@ -426,7 +451,9 @@ handleAction = case _ of
     handleAction RefreshAgentSessions
     st <- H.get
     case page of
-      AgentsPage -> pure unit
+      BacklogPage -> pure unit
+      WIPPage -> pure unit
+      DonePage -> pure unit
       ProjectsPage ->
         when (null st.projects) do
           handleAction RefreshProjects
@@ -486,6 +513,10 @@ handleAction = case _ of
     handleStopAgent handleAction
       fullName
       issueNum
+  SetKanbanProject projId -> do
+    H.modify_ _ { kanbanProject = Just projId }
+    liftEffect $ saveKanbanProject projId
+    handleAction (RefreshProjectItems projId)
   SetAgentServer url ->
     handleSetAgentServer url
   RefreshAgentSessions ->

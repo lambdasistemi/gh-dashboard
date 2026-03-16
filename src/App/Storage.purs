@@ -10,6 +10,8 @@ module App.Storage
   , defaultViewState
   , loadAgentServer
   , saveAgentServer
+  , loadKanbanProject
+  , saveKanbanProject
   , clearToken
   , clearAll
   ) where
@@ -55,7 +57,7 @@ type ViewState =
 
 defaultViewState :: ViewState
 defaultViewState =
-  { currentPage: ReposPage
+  { currentPage: WIPPage
   , expanded: Nothing
   , expandedProject: Nothing
   , expandedItems: Set.empty
@@ -135,7 +137,9 @@ saveViewState vs = do
     obj = FO.fromFoldable
       [ "currentPage" /\ encodeJson
           ( case vs.currentPage of
-              AgentsPage -> "AgentsPage"
+              BacklogPage -> "BacklogPage"
+              WIPPage -> "WIPPage"
+              DonePage -> "DonePage"
               ReposPage -> "ReposPage"
               ProjectsPage -> "ProjectsPage"
           )
@@ -180,11 +184,17 @@ loadViewState = do
                     lmap printJsonDecodeError
                       (obj .: "currentPage")
                     of
-                    Right "AgentsPage" ->
-                      AgentsPage
+                    Right "BacklogPage" ->
+                      BacklogPage
+                    Right "WIPPage" ->
+                      WIPPage
+                    Right "DonePage" ->
+                      DonePage
                     Right "ProjectsPage" ->
                       ProjectsPage
-                    _ -> ReposPage
+                    Right "ReposPage" ->
+                      ReposPage
+                    _ -> WIPPage
               , expanded:
                   case
                     lmap printJsonDecodeError
@@ -271,6 +281,21 @@ saveAgentServer url = do
   w <- window
   s <- localStorage w
   Storage.setItem storageKeyAgentServer url s
+
+storageKeyKanbanProject :: String
+storageKeyKanbanProject = "gh-dashboard-kanban-project"
+
+loadKanbanProject :: Effect (Maybe String)
+loadKanbanProject = do
+  w <- window
+  s <- localStorage w
+  Storage.getItem storageKeyKanbanProject s
+
+saveKanbanProject :: String -> Effect Unit
+saveKanbanProject pid = do
+  w <- window
+  s <- localStorage w
+  Storage.setItem storageKeyKanbanProject pid s
 
 storageKeyCryptoKey :: String
 storageKeyCryptoKey = "gh-dashboard-crypto-key"
