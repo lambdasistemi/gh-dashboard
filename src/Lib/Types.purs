@@ -256,6 +256,7 @@ data Page
   = BacklogPage
   | WIPPage
   | DonePage
+  | FiltersPage
   | ReposPage
   | ProjectsPage
 
