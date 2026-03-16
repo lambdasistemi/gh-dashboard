@@ -224,6 +224,74 @@
       .detail-table td { padding: 4px 4px; font-size: 12px; }
       .detail-body pre { font-size: 10px; }
     }
+
+    /* Agents view */
+    .agents-view { padding: 0 16px; }
+    .agents-header { margin-bottom: 16px; }
+    .agents-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .agents-title-row h2 { margin: 0; font-size: 18px; }
+    .agents-empty { padding: 32px; text-align: center; }
+    .agents-section-title {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin: 16px 0 8px;
+    }
+    .agent-row {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      margin-bottom: 6px;
+      background: var(--bg-surface);
+      transition: border-color 0.15s;
+    }
+    .agent-row:hover { border-color: var(--border); }
+    .agent-row-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+    }
+    .agent-status-badge {
+      width: 18px;
+      text-align: center;
+      font-size: 14px;
+    }
+    .badge-running { color: #4caf50; }
+    .badge-waiting { color: #ff9800; }
+    .badge-completed { color: #2196f3; }
+    .badge-error { color: #f44336; }
+    .badge-idle { color: var(--text-dim); }
+    .badge-unknown { color: var(--text-dim); }
+    .agent-key {
+      flex: 1;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    .agent-status-text {
+      font-size: 12px;
+      color: var(--text-muted);
+      min-width: 80px;
+    }
+    .agent-badge { font-size: 14px; }
+    .agent-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .agent-terminal {
+      border-top: 1px solid var(--border-subtle);
+      min-height: 200px;
+    }
+    .agent-running { border-left: 3px solid #4caf50; }
+    .agent-waiting { border-left: 3px solid #ff9800; }
+    .agent-completed { border-left: 3px solid #2196f3; }
+    .agent-error { border-left: 3px solid #f44336; }
+    .agent-idle { border-left: 3px solid var(--border-subtle); }
+    .agent-unknown { border-left: 3px solid var(--border-subtle); }
   </style>
 </head>
 <body>

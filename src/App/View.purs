@@ -14,6 +14,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Lib.Types (Page(..), Repo)
+import App.View.Agents (renderAgents)
 import App.View.Projects (renderProjects)
 import App.View.RepoTable (renderRepoTable)
 import App.View.Types (Action(..), State, Toast, ToastLevel(..))
@@ -104,6 +105,7 @@ renderDashboard state repos =
             [ HH.text err ]
         Nothing -> HH.text ""
     , case state.currentPage of
+        AgentsPage -> renderAgents state
         ReposPage ->
           HH.div_
             ( ( if state.showAddRepo then
@@ -159,6 +161,20 @@ renderToolbar state =
     [ HH.div
         [ HP.class_ (HH.ClassName "tab-bar") ]
         [ HH.button
+            [ HE.onClick \_ ->
+                SwitchPage AgentsPage
+            , HP.class_
+                ( HH.ClassName
+                    ( "tab-btn"
+                        <> activeIf
+                          ( state.currentPage
+                              == AgentsPage
+                          )
+                    )
+                )
+            ]
+            [ HH.text "Agents" ]
+        , HH.button
             [ HE.onClick \_ ->
                 SwitchPage ReposPage
             , HP.class_
