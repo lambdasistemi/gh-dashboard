@@ -47,6 +47,7 @@ import Data.Argonaut.Core
   , stringify
   , toArray
   , toObject
+  , toString
   )
 import Data.Argonaut.Decode.Combinators ((.:))
 import Data.Argonaut.Encode.Class (encodeJson)
@@ -424,8 +425,17 @@ parseBranch json = do
   issue <- hush (obj .: "issue") :: Maybe Int
   branchName <- hush (obj .: "name") :: Maybe String
   let
-    sync = fromMaybe "unknown"
-      (hush (obj .: "sync") :: Maybe String)
+    syncJson = hush (obj .: "sync") :: Maybe Json
+    sync = case syncJson of
+      Just sj -> case toString sj of
+        Just s -> s
+        Nothing -> case toObject sj of
+          Just sObj -> fromMaybe "unknown"
+            ( hush (sObj .: "status")
+                :: Maybe String
+            )
+          Nothing -> "unknown"
+      Nothing -> "unknown"
     key = owner <> "/" <> name <> "#" <> show issue
     branch =
       { repo: { owner, name }
