@@ -849,46 +849,47 @@ renderItemRow state projId mSf (ProjectItem item) =
                 ]
             ]
         , HH.td_
-            [ case mSf of
-                Nothing ->
-                  HH.span
-                    [ HP.class_
-                        (HH.ClassName "badge")
-                    ]
-                    [ HH.text curStatus ]
-                Just sf ->
-                  HH.span
-                    [ HP.class_
-                        ( HH.ClassName
-                            "status-selector"
-                        )
-                    ]
-                    ( map
-                        ( \opt ->
-                            HH.span
-                              [ HP.class_
-                                  ( HH.ClassName
-                                      ( "status-opt"
-                                          <>
-                                            if
-                                              opt.name
-                                                == curStatus then " active"
-                                            else ""
-                                      )
-                                  )
-                              , HE.onClick \_ ->
-                                  SetItemStatus
-                                    projId
-                                    item.itemId
-                                    opt.name
-                              , HP.attr
-                                  (AttrName "onclick")
-                                  "event.stopPropagation()"
-                              ]
-                              [ HH.text opt.name ]
-                        )
-                        sf.options
-                    )
+            [ HH.span
+                [ HP.class_
+                    (HH.ClassName "move-buttons")
+                ]
+                [ if curStatus /= "Backlog" then
+                    HH.button
+                      [ HP.class_
+                          (HH.ClassName "btn-hide")
+                      , HP.title
+                          ( "Move to "
+                              <> prevCol curStatus
+                          )
+                      , HE.onClick \_ ->
+                          SetItemStatus projId
+                            item.itemId
+                            (prevCol curStatus)
+                      , HP.attr
+                          (AttrName "onclick")
+                          "event.stopPropagation()"
+                      ]
+                      [ HH.text "\x25C0" ]
+                  else HH.text ""
+                , if curStatus /= "Done" then
+                    HH.button
+                      [ HP.class_
+                          (HH.ClassName "btn-hide")
+                      , HP.title
+                          ( "Move to "
+                              <> nextCol curStatus
+                          )
+                      , HE.onClick \_ ->
+                          SetItemStatus projId
+                            item.itemId
+                            (nextCol curStatus)
+                      , HP.attr
+                          (AttrName "onclick")
+                          "event.stopPropagation()"
+                      ]
+                      [ HH.text "\x25B6" ]
+                  else HH.text ""
+                ]
             ]
         ]
     ]
@@ -908,3 +909,15 @@ renderItemRow state projId mSf (ProjectItem item) =
                 else renderMarkdownRow item.body
             _, _ -> renderMarkdownRow item.body
         else []
+
+-- | Previous column in the Kanban flow.
+prevCol :: String -> String
+prevCol "WIP" = "Backlog"
+prevCol "Done" = "WIP"
+prevCol s = s
+
+-- | Next column in the Kanban flow.
+nextCol :: String -> String
+nextCol "Backlog" = "WIP"
+nextCol "WIP" = "Done"
+nextCol s = s

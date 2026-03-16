@@ -180,6 +180,16 @@ renderKanban state =
     Nothing -> renderProjectSetup state
     Just projId ->
       let
+        mSf = Map.lookup projId
+          state.projectStatusFields
+        valid = case mSf of
+          Just sf -> hasRequiredStatuses sf
+          Nothing -> true -- not loaded yet, optimistic
+      in
+        if not valid then
+          renderProjectSetup state
+        else
+      let
         items = fromMaybe []
           (Map.lookup projId state.projectItems)
         columnStatus = case state.currentPage of
@@ -236,8 +246,7 @@ renderKanban state =
                             [ HH.text "Title" ]
                         , HH.th_
                             [ HH.text "Repo" ]
-                        , HH.th_
-                            [ HH.text "Status" ]
+                        , HH.th_ []
                         ]
                     ]
                 , HH.tbody_
