@@ -174,7 +174,11 @@ renderToolbar state =
         ]
         [ HH.button
             [ HE.onClick \_ ->
-                SwitchPage FiltersPage
+                SwitchPage
+                  ( if state.currentPage == FiltersPage
+                      then WIPPage
+                    else FiltersPage
+                  )
             , HP.class_
                 ( HH.ClassName
                     ( "toolbar-icon"
@@ -189,7 +193,11 @@ renderToolbar state =
             [ HH.text "\x2AF6" ]
         , HH.button
             [ HE.onClick \_ ->
-                SwitchPage SettingsPage
+                SwitchPage
+                  ( if state.currentPage == SettingsPage
+                      then WIPPage
+                    else SettingsPage
+                  )
             , HP.class_
                 ( HH.ClassName
                     ( "toolbar-icon"
