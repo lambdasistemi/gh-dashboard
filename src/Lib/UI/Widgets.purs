@@ -24,11 +24,13 @@ settingsRow
   -> HH.HTML w i
 settingsRow label desc controls =
   HH.div
-    [ HP.style
-        "display:flex; gap:12px; align-items:center; padding:8px 0; border-bottom:1px solid var(--border-subtle)"
+    [ HP.class_
+        (HH.ClassName "settings-row")
     ]
     [ HH.div
-        [ HP.style "min-width:120px" ]
+        [ HP.class_
+            (HH.ClassName "settings-row-label")
+        ]
         [ HH.div
             [ HP.style
                 "font-size:13px; font-weight:500"
@@ -43,8 +45,8 @@ settingsRow label desc controls =
           else HH.text ""
         ]
     , HH.div
-        [ HP.style
-            "display:flex; gap:8px; align-items:center; flex-wrap:wrap; flex:1"
+        [ HP.class_
+            (HH.ClassName "settings-row-controls")
         ]
         controls
     ]
