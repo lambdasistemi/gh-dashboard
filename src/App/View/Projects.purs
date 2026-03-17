@@ -660,22 +660,24 @@ renderItemRow state projId mSf (ProjectItem item) =
             [ HP.class_
                 (HH.ClassName "item-meta")
             ]
-            [ case item.number of
-                Just n ->
-                  HH.span
-                    [ HP.style "float:left"
-                    ]
-                    [ HH.text ("#" <> show n) ]
-                Nothing -> HH.text ""
-            , HH.span
-                [ HP.style "float:right"
-                , HP.class_
-                    (HH.ClassName "repo-desc")
+            [ HH.div
+                [ HP.style
+                    "display:flex; justify-content:space-between"
                 ]
-                [ HH.text
-                    ( fromMaybe ""
-                        item.repoName
-                    )
+                [ case item.number of
+                    Just n ->
+                      HH.span_
+                        [ HH.text ("#" <> show n) ]
+                    Nothing -> HH.text ""
+                , HH.span
+                    [ HP.class_
+                        (HH.ClassName "repo-desc")
+                    ]
+                    [ HH.text
+                        ( fromMaybe ""
+                            item.repoName
+                        )
+                    ]
                 ]
             ]
         , if isEditing then
