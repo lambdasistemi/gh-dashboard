@@ -660,16 +660,21 @@ renderItemRow state projId mSf (ProjectItem item) =
             [ HP.class_
                 (HH.ClassName "item-meta")
             ]
-            [ HH.span
-                [ HP.class_
+            [ case item.number of
+                Just n ->
+                  HH.span
+                    [ HP.style "float:left"
+                    ]
+                    [ HH.text ("#" <> show n) ]
+                Nothing -> HH.text ""
+            , HH.span
+                [ HP.style "float:right"
+                , HP.class_
                     (HH.ClassName "repo-desc")
                 ]
                 [ HH.text
                     ( fromMaybe ""
                         item.repoName
-                        <> case item.number of
-                          Just n -> "#" <> show n
-                          Nothing -> ""
                     )
                 ]
             ]
