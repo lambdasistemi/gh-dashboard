@@ -8,13 +8,14 @@ module App.View
 import Prelude
 
 import Data.Array (null)
+import Data.Show (show)
 import Data.Maybe (Maybe(..))
 import Lib.GitHub (RateLimit)
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Lib.Types (Page(..), Repo)
-import App.View.Kanban (renderFilters, renderKanban)
+import App.View.Kanban (columnCount, renderFilters, renderKanban)
 import Lib.UI.Widgets (settingsRow)
 import App.View.Projects (renderProjects)
 import App.View.RepoTable (renderRepoTable)
@@ -100,7 +101,7 @@ renderDashboard state repos =
     [ HP.style "padding: 0.5em;" ]
     [ renderToasts state.toasts
     , renderToolbar state
-    , renderPageIndicator state.currentPage
+    , renderPageIndicator state
     , case state.error of
         Just err ->
           HH.div
@@ -138,7 +139,12 @@ renderToolbar state =
                     )
                 )
             ]
-            [ HH.text "Backlog" ]
+            [ HH.text
+                ( "Backlog ("
+                    <> show (columnCount state "Backlog")
+                    <> ")"
+                )
+            ]
         , HH.button
             [ HE.onClick \_ ->
                 SwitchPage WIPPage
@@ -152,7 +158,12 @@ renderToolbar state =
                     )
                 )
             ]
-            [ HH.text "WIP" ]
+            [ HH.text
+                ( "WIP ("
+                    <> show (columnCount state "WIP")
+                    <> ")"
+                )
+            ]
         , HH.button
             [ HE.onClick \_ ->
                 SwitchPage DonePage
@@ -166,7 +177,12 @@ renderToolbar state =
                     )
                 )
             ]
-            [ HH.text "Done" ]
+            [ HH.text
+                ( "Done ("
+                    <> show (columnCount state "Done")
+                    <> ")"
+                )
+            ]
         ]
     , HH.div
         [ HP.class_
@@ -295,10 +311,11 @@ renderSettings state =
 
 -- | Page indicator dots for mobile swipe nav.
 renderPageIndicator
-  :: forall w i. Page -> HH.HTML w i
-renderPageIndicator page =
+  :: forall w i. State -> HH.HTML w i
+renderPageIndicator state =
   let
-    dot p label = HH.span
+    page = state.currentPage
+    dot p status = HH.span
       [ HP.class_
           ( HH.ClassName
               ( "page-dot"
@@ -306,7 +323,7 @@ renderPageIndicator page =
                     else ""
               )
           )
-      , HP.title label
+      , HP.title status
       ]
       []
     label = case page of
@@ -314,6 +331,11 @@ renderPageIndicator page =
       WIPPage -> "WIP"
       DonePage -> "Done"
       _ -> ""
+    count = case page of
+      BacklogPage -> columnCount state "Backlog"
+      WIPPage -> columnCount state "WIP"
+      DonePage -> columnCount state "Done"
+      _ -> 0
   in
     HH.div
       [ HP.class_
@@ -327,7 +349,12 @@ renderPageIndicator page =
             [ HP.style
                 "font-size:11px; margin-left:4px"
             ]
-            [ HH.text label ]
+            [ HH.text
+                ( label <> " ("
+                    <> show count
+                    <> ")"
+                )
+            ]
         else HH.text ""
       ]
 

@@ -4,6 +4,7 @@ module App.View.Kanban
   ( renderKanban
   , renderProjectSetup
   , renderFilters
+  , columnCount
   ) where
 
 import Prelude
@@ -311,6 +312,23 @@ renderFilters state =
               ]
           ]
 
+-- | Count items in a column for a given status.
+columnCount :: State -> String -> Int
+columnCount state status =
+  case state.kanbanProject of
+    Nothing -> 0
+    Just projId ->
+      let
+        allItems = fromMaybe []
+          (Map.lookup projId state.projectItems)
+        items = applyKanbanFilters state allItems
+      in
+        length $ filter
+          ( \(ProjectItem pi) ->
+              fromMaybe "" pi.status == status
+          )
+          items
+
 -- | Main kanban view — renders the current column
 -- | using the same table layout as the repos tab.
 renderKanban
@@ -351,19 +369,7 @@ renderKanban state =
               [ HP.class_
                   (HH.ClassName "detail-section")
               ]
-              [ HH.div
-                  [ HP.class_
-                      (HH.ClassName "detail-heading")
-                  ]
-                  [ HH.text
-                      ( columnStatus <> " ("
-                          <> show count
-                          <> ")"
-                      )
-                  , refreshButton
-                      (RefreshProjectItems projId)
-                  ]
-              , if null columnItems then
+              [ if null columnItems then
                   HH.div
                     [ HP.class_
                         (HH.ClassName "empty-msg")
