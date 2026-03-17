@@ -884,7 +884,6 @@ renderItemRow state projId mSf (ProjectItem item) =
                               else HH.text ""
                             ]
                       )
-                      )
                   ]
               ]
             body = case item.repoName, item.number of
