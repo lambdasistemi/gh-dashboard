@@ -658,101 +658,6 @@ renderItemRow state projId mSf (ProjectItem item) =
         ]
         [ HH.td
             [ HP.class_
-                (HH.ClassName "item-actions")
-            ]
-            ( ( case item.repoName, item.number of
-                  Just repo, Just n ->
-                    [ refreshButton
-                        ( RefreshProjectItem
-                            projId
-                            repo
-                            n
-                        )
-                    ]
-                      <>
-                        if isWIP then
-                          launchButton
-                            state.launchedItems
-                            key
-                            repo
-                            n
-                        else []
-                  _, _ -> []
-              )
-                <>
-                  case item.url of
-                    Just url ->
-                      [ linkButton url
-                      , copyButton url
-                      ]
-                    Nothing ->
-                      [ copyButton item.title ]
-                <>
-                  case item.draftId of
-                    Just _ | isDraft ->
-                      [ HH.button
-                          [ HP.class_
-                              (HH.ClassName "btn-hide")
-                          , HP.title "Edit"
-                          , HE.onClick \_ ->
-                              StartEditItem item.itemId
-                                item.title
-                          , HP.attr
-                              (AttrName "onclick")
-                              "event.stopPropagation()"
-                          ]
-                          [ HH.text "\x270E" ]
-                      , HH.button
-                          [ HP.class_
-                              (HH.ClassName "btn-hide")
-                          , HP.title "Delete"
-                          , HE.onClick \_ ->
-                              DeleteItem projId
-                                item.itemId
-                          , HP.attr
-                              (AttrName "onclick")
-                              "event.stopPropagation()"
-                          ]
-                          [ HH.text "\x2716" ]
-                      ]
-                    _ -> []
-                <>
-                  [ if curStatus /= "Backlog" then
-                      HH.button
-                        [ HP.class_
-                            (HH.ClassName "btn-small")
-                        , HE.onClick \_ ->
-                            SetItemStatus projId
-                              item.itemId
-                              (prevCol curStatus)
-                        , HP.attr
-                            (AttrName "onclick")
-                            "event.stopPropagation()"
-                        ]
-                        [ HH.text
-                            (prevCol curStatus)
-                        ]
-                    else HH.text ""
-                  , if curStatus /= "Done" then
-                      HH.button
-                        [ HP.class_
-                            (HH.ClassName "btn-small")
-                        , HE.onClick \_ ->
-                            SetItemStatus projId
-                              item.itemId
-                              (nextCol curStatus)
-                        , HP.attr
-                            (AttrName "onclick")
-                            "event.stopPropagation()"
-                        ]
-                        [ HH.text
-                            (nextCol curStatus)
-                        ]
-                    else HH.text ""
-                  ]
-            )
-        , HH.td
-            [ HP.class_
                 (HH.ClassName "item-meta")
             ]
             [ HH.span
@@ -889,6 +794,72 @@ renderItemRow state projId mSf (ProjectItem item) =
                       <> [ HH.text item.title ]
                   )
               ]
+        , HH.td
+            [ HP.class_
+                (HH.ClassName "item-actions")
+            ]
+            ( ( case item.repoName, item.number of
+                  Just repo, Just n ->
+                    [ refreshButton
+                        ( RefreshProjectItem
+                            projId
+                            repo
+                            n
+                        )
+                    ]
+                      <>
+                        if isWIP then
+                          launchButton
+                            state.launchedItems
+                            key
+                            repo
+                            n
+                        else []
+                  _, _ -> []
+              )
+                <>
+                  case item.url of
+                    Just url ->
+                      [ linkButton url
+                      , copyButton url
+                      ]
+                    Nothing ->
+                      [ copyButton item.title ]
+                <>
+                  [ if curStatus /= "Backlog" then
+                      HH.button
+                        [ HP.class_
+                            (HH.ClassName "btn-small")
+                        , HE.onClick \_ ->
+                            SetItemStatus projId
+                              item.itemId
+                              (prevCol curStatus)
+                        , HP.attr
+                            (AttrName "onclick")
+                            "event.stopPropagation()"
+                        ]
+                        [ HH.text
+                            (prevCol curStatus)
+                        ]
+                    else HH.text ""
+                  , if curStatus /= "Done" then
+                      HH.button
+                        [ HP.class_
+                            (HH.ClassName "btn-small")
+                        , HE.onClick \_ ->
+                            SetItemStatus projId
+                              item.itemId
+                              (nextCol curStatus)
+                        , HP.attr
+                            (AttrName "onclick")
+                            "event.stopPropagation()"
+                        ]
+                        [ HH.text
+                            (nextCol curStatus)
+                        ]
+                    else HH.text ""
+                  ]
+            )
         ]
     ]
       <>

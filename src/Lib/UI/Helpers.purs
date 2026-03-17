@@ -103,10 +103,11 @@ linkButton url =
   HH.a
     [ HP.href url
     , HP.target "_blank"
-    , HP.class_ (HH.ClassName "link-btn")
+    , HP.class_ (HH.ClassName "btn-small")
     , HP.title "Open on GitHub"
+    , HP.style "text-decoration:none"
     ]
-    [ HH.text "\x2197" ]
+    [ HH.text "Open" ]
 
 -- | Column headers for detail tables.
 detailHead :: forall w i. HH.HTML w i
