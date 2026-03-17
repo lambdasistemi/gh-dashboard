@@ -794,7 +794,7 @@ renderItemRow state projId mSf (ProjectItem item) =
                       ]
                       ( [ HH.hr
                             [ HP.style
-                                "border:none; height:1px; background:var(--text-dim); margin:4px 10%; opacity:0.4"
+                                "border:none; height:1px; background:var(--text-dim); margin:4px 10%; opacity:0.4; width:100%; flex-basis:100%"
                             ]
                         ]
                           <> ( case item.repoName,
