@@ -669,28 +669,25 @@ renderItemRow state projId mSf (ProjectItem item) =
                         item.repoName
                     )
                 ]
-            , if null item.labels then
-                HH.text ""
-              else
-                HH.span
-                  [ HP.class_
-                      ( HH.ClassName
-                          "detail-labels"
-                      )
-                  ]
-                  ( map
-                      ( \lbl ->
-                          HH.span
-                            [ HP.class_
-                                ( HH.ClassName
-                                    "label-tag"
-                                )
-                            ]
-                            [ HH.text lbl ]
-                      )
-                      item.labels
-                  )
             ]
+        , if null item.labels then HH.text ""
+          else
+            HH.td
+              [ HP.class_
+                  (HH.ClassName "item-labels")
+              ]
+              ( map
+                  ( \lbl ->
+                      HH.span
+                        [ HP.class_
+                            ( HH.ClassName
+                                "label-tag"
+                            )
+                        ]
+                        [ HH.text lbl ]
+                  )
+                  item.labels
+              )
         , if isEditing then
             HH.td_
               [ HH.div
