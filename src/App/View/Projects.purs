@@ -751,6 +751,41 @@ renderItemRow state projId mSf (ProjectItem item) =
                     else HH.text ""
                   ]
             )
+        , HH.td
+            [ HP.class_
+                (HH.ClassName "item-meta")
+            ]
+            [ HH.span
+                [ HP.class_
+                    (HH.ClassName "repo-desc")
+                ]
+                [ HH.text
+                    ( fromMaybe ""
+                        item.repoName
+                    )
+                ]
+            , if null item.labels then
+                HH.text ""
+              else
+                HH.span
+                  [ HP.class_
+                      ( HH.ClassName
+                          "detail-labels"
+                      )
+                  ]
+                  ( map
+                      ( \lbl ->
+                          HH.span
+                            [ HP.class_
+                                ( HH.ClassName
+                                    "label-tag"
+                                )
+                            ]
+                            [ HH.text lbl ]
+                      )
+                      item.labels
+                  )
+            ]
         , if isEditing then
             HH.td_
               [ HH.div
@@ -854,41 +889,6 @@ renderItemRow state projId mSf (ProjectItem item) =
                       <> [ HH.text item.title ]
                   )
               ]
-        , HH.td
-            [ HP.class_
-                (HH.ClassName "item-meta")
-            ]
-            [ HH.span
-                [ HP.class_
-                    (HH.ClassName "repo-desc")
-                ]
-                [ HH.text
-                    ( fromMaybe ""
-                        item.repoName
-                    )
-                ]
-            , if null item.labels then
-                HH.text ""
-              else
-                HH.span
-                  [ HP.class_
-                      ( HH.ClassName
-                          "detail-labels"
-                      )
-                  ]
-                  ( map
-                      ( \lbl ->
-                          HH.span
-                            [ HP.class_
-                                ( HH.ClassName
-                                    "label-tag"
-                                )
-                            ]
-                            [ HH.text lbl ]
-                      )
-                      item.labels
-                  )
-            ]
         ]
     ]
       <>
