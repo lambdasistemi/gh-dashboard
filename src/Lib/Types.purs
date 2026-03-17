@@ -257,6 +257,7 @@ data Page
   | WIPPage
   | DonePage
   | FiltersPage
+  | SettingsPage
   | ReposPage
   | ProjectsPage
 

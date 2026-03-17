@@ -110,11 +110,8 @@ renderDashboard state repos =
         BacklogPage -> renderKanban state
         WIPPage -> renderKanban state
         DonePage -> renderKanban state
-        FiltersPage ->
-          HH.div_
-            [ renderFilters state
-            , renderSettings state
-            ]
+        FiltersPage -> renderFilters state
+        SettingsPage -> renderSettings state
         ReposPage -> renderKanban state
         ProjectsPage -> renderKanban state
     ]
@@ -178,6 +175,20 @@ renderToolbar state =
                         <> activeIf
                           ( state.currentPage
                               == FiltersPage
+                          )
+                    )
+                )
+            ]
+            [ HH.text "\x2AF6" ]
+        , HH.button
+            [ HE.onClick \_ ->
+                SwitchPage SettingsPage
+            , HP.class_
+                ( HH.ClassName
+                    ( "tab-btn"
+                        <> activeIf
+                          ( state.currentPage
+                              == SettingsPage
                           )
                     )
                 )

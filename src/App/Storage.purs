@@ -141,6 +141,7 @@ saveViewState vs = do
               WIPPage -> "WIPPage"
               DonePage -> "DonePage"
               FiltersPage -> "FiltersPage"
+              SettingsPage -> "SettingsPage"
               ReposPage -> "ReposPage"
               ProjectsPage -> "ProjectsPage"
           )
@@ -193,6 +194,8 @@ loadViewState = do
                       DonePage
                     Right "FiltersPage" ->
                       FiltersPage
+                    Right "SettingsPage" ->
+                      SettingsPage
                     Right "ProjectsPage" ->
                       ProjectsPage
                     Right "ReposPage" ->
