@@ -21,7 +21,7 @@ refreshButton
 refreshButton action =
   HH.button
     [ HE.onClick \_ -> action
-    , HP.class_ (HH.ClassName "btn-hide")
+    , HP.class_ (HH.ClassName "btn-small")
     , HP.title "Refresh"
     , HP.attr (AttrName "onclick")
         "event.stopPropagation()"
@@ -34,12 +34,12 @@ copyButton
 copyButton text =
   HH.button
     [ HE.onClick \_ -> CopyText text
-    , HP.class_ (HH.ClassName "btn-hide")
+    , HP.class_ (HH.ClassName "btn-small")
     , HP.title "Copy title"
     , HP.attr (AttrName "onclick")
         "event.stopPropagation()"
     ]
-    [ HH.text "\x2398" ]
+    [ HH.text "Copy" ]
 
 -- | Hide/unhide toggle button.
 hideButton
@@ -47,12 +47,14 @@ hideButton
 hideButton url isHidden =
   HH.button
     [ HE.onClick \_ -> HideItem url
-    , HP.class_ (HH.ClassName "btn-hide")
+    , HP.class_ (HH.ClassName "btn-small")
     , HP.title
         (if isHidden then "Unhide" else "Hide")
+    , HP.attr (AttrName "onclick")
+        "event.stopPropagation()"
     ]
     [ HH.text
-        (if isHidden then "\x25C9" else "\x25CC")
+        (if isHidden then "Show" else "Hide")
     ]
 
 -- | Launch/detach/stop buttons for an issue agent.
@@ -72,31 +74,31 @@ launchButton launched toggleKey repoName issueNum =
       [ HH.button
           [ HE.onClick \_ ->
               DetachAgent repoName issueNum
-          , HP.class_ (HH.ClassName "btn-hide")
+          , HP.class_ (HH.ClassName "btn-small")
           , HP.title "Detach terminal"
           , HP.attr (AttrName "onclick")
               "event.stopPropagation()"
           ]
-          [ HH.text "\x23CF" ]
+          [ HH.text "Detach" ]
       , HH.button
           [ HE.onClick \_ ->
               StopAgent repoName issueNum
-          , HP.class_ (HH.ClassName "btn-hide")
+          , HP.class_ (HH.ClassName "btn-small")
           , HP.title "Stop agent"
           , HP.attr (AttrName "onclick")
               "event.stopPropagation()"
           ]
-          [ HH.text "\x23F9" ]
+          [ HH.text "Stop" ]
       ]
     else
       [ HH.button
           [ HE.onClick \_ ->
               LaunchAgent toggleKey repoName
                 issueNum
-          , HP.class_ (HH.ClassName "btn-hide")
+          , HP.class_ (HH.ClassName "btn-small")
           , HP.title "Launch agent"
           , HP.attr (AttrName "onclick")
               "event.stopPropagation()"
           ]
-          [ HH.text "\x25B6" ]
+          [ HH.text "Launch" ]
       ]
