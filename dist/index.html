@@ -316,6 +316,14 @@
     .agent-unknown { border-left: 3px solid var(--border-subtle); }
     .badge-creating { color: #ff9800; }
     .badge-stopping { color: #ff9800; }
+    .settings-row { display: flex; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-subtle); }
+    .settings-row-label { min-width: 120px; }
+    .settings-row-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex: 1; }
+    @media (max-width: 640px) {
+      .settings-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+      .settings-row-label { min-width: 0; }
+      .settings-row-controls { width: 100%; }
+    }
   </style>
 </head>
 <body>
