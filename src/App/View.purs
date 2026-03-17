@@ -101,7 +101,6 @@ renderDashboard state repos =
     [ HP.style "padding: 0.5em;" ]
     [ renderToasts state.toasts
     , renderToolbar state
-    , renderPageIndicator state
     , case state.error of
         Just err ->
           HH.div
@@ -184,6 +183,7 @@ renderToolbar state =
                 )
             ]
         ]
+    , renderPageIndicator state
     , HH.div
         [ HP.class_
             (HH.ClassName "toolbar-icons")
