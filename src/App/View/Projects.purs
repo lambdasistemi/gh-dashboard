@@ -853,29 +853,11 @@ renderItemRow state projId mSf (ProjectItem item) =
                         )
                       <> [ HH.text item.title ]
                   )
-              , if null item.labels then
-                  HH.text ""
-                else
-                  HH.span
-                    [ HP.class_
-                        ( HH.ClassName
-                            "detail-labels"
-                        )
-                    ]
-                    ( map
-                        ( \lbl ->
-                            HH.span
-                              [ HP.class_
-                                  ( HH.ClassName
-                                      "label-tag"
-                                  )
-                              ]
-                              [ HH.text lbl ]
-                        )
-                        item.labels
-                    )
               ]
-        , HH.td_
+        , HH.td
+            [ HP.class_
+                (HH.ClassName "item-meta")
+            ]
             [ HH.span
                 [ HP.class_
                     (HH.ClassName "repo-desc")
@@ -885,6 +867,27 @@ renderItemRow state projId mSf (ProjectItem item) =
                         item.repoName
                     )
                 ]
+            , if null item.labels then
+                HH.text ""
+              else
+                HH.span
+                  [ HP.class_
+                      ( HH.ClassName
+                          "detail-labels"
+                      )
+                  ]
+                  ( map
+                      ( \lbl ->
+                          HH.span
+                            [ HP.class_
+                                ( HH.ClassName
+                                    "label-tag"
+                                )
+                            ]
+                            [ HH.text lbl ]
+                      )
+                      item.labels
+                  )
             ]
         ]
     ]
