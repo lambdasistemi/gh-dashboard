@@ -794,89 +794,125 @@ renderItemRow state projId mSf (ProjectItem item) =
                       <> [ HH.text item.title ]
                   )
               ]
-        , HH.td
-            [ HP.class_
-                (HH.ClassName "item-actions")
-            ]
-            ( ( case item.repoName, item.number of
-                  Just repo, Just n ->
-                    [ refreshButton
-                        ( RefreshProjectItem
-                            projId
-                            repo
-                            n
-                        )
-                    ]
-                      <>
-                        if isWIP then
-                          launchButton
-                            state.launchedItems
-                            key
-                            repo
-                            n
-                        else []
-                  _, _ -> []
-              )
-                <>
-                  case item.url of
-                    Just url ->
-                      [ linkButton url
-                      , copyButton url
-                      ]
-                    Nothing ->
-                      [ copyButton item.title ]
-                <>
-                  [ if curStatus /= "Backlog" then
-                      HH.button
-                        [ HP.class_
-                            (HH.ClassName "btn-small")
-                        , HE.onClick \_ ->
-                            SetItemStatus projId
-                              item.itemId
-                              (prevCol curStatus)
-                        , HP.attr
-                            (AttrName "onclick")
-                            "event.stopPropagation()"
-                        ]
-                        [ HH.text
-                            (prevCol curStatus)
-                        ]
-                    else HH.text ""
-                  , if curStatus /= "Done" then
-                      HH.button
-                        [ HP.class_
-                            (HH.ClassName "btn-small")
-                        , HE.onClick \_ ->
-                            SetItemStatus projId
-                              item.itemId
-                              (nextCol curStatus)
-                        , HP.attr
-                            (AttrName "onclick")
-                            "event.stopPropagation()"
-                        ]
-                        [ HH.text
-                            (nextCol curStatus)
-                        ]
-                    else HH.text ""
-                  ]
-            )
         ]
     ]
       <>
         if isOpen then
-          case item.repoName, item.number of
-            Just repo, Just n ->
-              let
-                launchKey = repo <> "#"
-                  <> show n
-              in
-                if
-                  Set.member launchKey
-                    state.launchedItems then
-                  renderTerminalRow
-                    (termElementId launchKey)
-                else renderMarkdownRow item.body
-            _, _ -> renderMarkdownRow item.body
+          let
+            controls =
+              [ HH.tr
+                  [ HP.class_
+                      (HH.ClassName "detail-row")
+                  ]
+                  [ HH.td
+                      [ HP.colSpan 3
+                      , HP.class_
+                          (HH.ClassName "item-actions")
+                      ]
+                      ( ( case item.repoName,
+                            item.number of
+                            Just repo, Just n ->
+                              [ refreshButton
+                                  ( RefreshProjectItem
+                                      projId
+                                      repo
+                                      n
+                                  )
+                              ]
+                                <>
+                                  if isWIP then
+                                    launchButton
+                                      state.launchedItems
+                                      key
+                                      repo
+                                      n
+                                  else []
+                            _, _ -> []
+                        )
+                          <>
+                            case item.url of
+                              Just url ->
+                                [ linkButton url
+                                , copyButton url
+                                ]
+                              Nothing ->
+                                [ copyButton
+                                    item.title
+                                ]
+                          <>
+                            [ if
+                                curStatus
+                                  /= "Backlog" then
+                                HH.button
+                                  [ HP.class_
+                                      ( HH.ClassName
+                                          "btn-small"
+                                      )
+                                  , HE.onClick \_ ->
+                                      SetItemStatus
+                                        projId
+                                        item.itemId
+                                        ( prevCol
+                                            curStatus
+                                        )
+                                  , HP.attr
+                                      ( AttrName
+                                          "onclick"
+                                      )
+                                      "event.stopPropagation()"
+                                  ]
+                                  [ HH.text
+                                      ( prevCol
+                                          curStatus
+                                      )
+                                  ]
+                              else HH.text ""
+                            , if
+                                curStatus
+                                  /= "Done" then
+                                HH.button
+                                  [ HP.class_
+                                      ( HH.ClassName
+                                          "btn-small"
+                                      )
+                                  , HE.onClick \_ ->
+                                      SetItemStatus
+                                        projId
+                                        item.itemId
+                                        ( nextCol
+                                            curStatus
+                                        )
+                                  , HP.attr
+                                      ( AttrName
+                                          "onclick"
+                                      )
+                                      "event.stopPropagation()"
+                                  ]
+                                  [ HH.text
+                                      ( nextCol
+                                          curStatus
+                                      )
+                                  ]
+                              else HH.text ""
+                            ]
+                      )
+                  ]
+              ]
+            body = case item.repoName, item.number of
+              Just repo, Just n ->
+                let
+                  launchKey = repo <> "#"
+                    <> show n
+                in
+                  if
+                    Set.member launchKey
+                      state.launchedItems then
+                    renderTerminalRow
+                      (termElementId launchKey)
+                  else renderMarkdownRow item.body
+              _, _ -> renderMarkdownRow item.body
+          in
+            controls <> body
         else []
 
 -- | Previous column in the Kanban flow.
