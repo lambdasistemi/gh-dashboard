@@ -276,7 +276,7 @@ renderToolbar state =
       else HH.text ""
     ]
 
--- | Settings panel rendered inside the Filters pane.
+-- | Settings panel — clear labels, grouped sections.
 renderSettings
   :: forall w. State -> HH.HTML w Action
 renderSettings state =
@@ -289,74 +289,118 @@ renderSettings state =
             (HH.ClassName "detail-heading")
         ]
         [ HH.text "Settings" ]
-    , HH.div
-        [ HP.class_
-            (HH.ClassName "add-repo-bar")
-        ]
+    -- Agent server
+    , settingsRow "Agent server"
+        "URL of the agent daemon that manages sessions and worktrees"
         [ HH.input
-            [ HP.placeholder "Agent server URL"
-            , HP.value state.agentServer
+            [ HP.value state.agentServer
             , HE.onValueInput SetAgentServer
             , HP.class_
                 (HH.ClassName "filter-input")
-            , HP.title "Agent daemon URL"
+            , HP.placeholder
+                "https://your-server:8443"
             ]
+        , if state.agentServer /= "" then
+            HH.span
+              [ HP.class_
+                  (HH.ClassName "badge badge-public")
+              ]
+              [ HH.text "connected" ]
+          else
+            HH.span
+              [ HP.class_
+                  (HH.ClassName "badge badge-private")
+              ]
+              [ HH.text "not set" ]
         ]
-    , HH.div
-        [ HP.class_
-            (HH.ClassName "add-repo-bar")
-        ]
-        [ renderRateLimit state.rateLimit
-        , HH.span
+    -- Rate limit
+    , settingsRow "GitHub API"
+        "Remaining API calls for this token"
+        [ renderRateLimit state.rateLimit ]
+    -- Theme
+    , settingsRow "Theme"
+        "Switch between dark and light mode"
+        [ HH.button
             [ HE.onClick \_ -> ToggleTheme
-            , HP.class_
-                (HH.ClassName "theme-toggle")
-            , HP.title "Toggle theme"
+            , HP.class_ (HH.ClassName "btn-small")
             ]
             [ HH.text
-                ( if state.darkTheme then "\x263E"
-                  else "\x2600"
+                ( if state.darkTheme then
+                    "Switch to light"
+                  else "Switch to dark"
                 )
             ]
-        , HH.a
+        ]
+    -- Data
+    , settingsRow "Data"
+        "Export or import your settings, or reset everything"
+        [ HH.button
+            [ HE.onClick \_ -> ExportStorage
+            , HP.class_ (HH.ClassName "btn-small")
+            ]
+            [ HH.text "Export" ]
+        , HH.button
+            [ HE.onClick \_ -> ImportStorage
+            , HP.class_ (HH.ClassName "btn-small")
+            ]
+            [ HH.text "Import" ]
+        , HH.button
+            [ HE.onClick \_ -> ResetToken
+            , HP.class_ (HH.ClassName "btn-small")
+            ]
+            [ HH.text "Reset token" ]
+        , HH.button
+            [ HE.onClick \_ -> ResetAll
+            , HP.class_ (HH.ClassName "btn-small")
+            ]
+            [ HH.text "Reset all" ]
+        ]
+    -- Links
+    , settingsRow "About"
+        ""
+        [ HH.a
             [ HP.href
                 "https://github.com/lambdasistemi/gh-dashboard"
             , HP.target "_blank"
             , HP.class_ (HH.ClassName "link-btn")
-            , HP.title "Source code"
             ]
-            [ HH.img
-                [ HP.src
-                    "https://github.githubassets.com/favicons/favicon-dark.svg"
-                , HP.width 16
-                , HP.height 16
-                ]
-            ]
-        , HH.button
-            [ HE.onClick \_ -> ExportStorage
-            , HP.class_ (HH.ClassName "btn-hide")
-            , HP.title "Export settings"
-            ]
-            [ HH.text "\x2B07" ]
-        , HH.button
-            [ HE.onClick \_ -> ImportStorage
-            , HP.class_ (HH.ClassName "btn-hide")
-            , HP.title "Import settings"
-            ]
-            [ HH.text "\x2B06" ]
-        , HH.button
-            [ HE.onClick \_ -> ResetToken
-            , HP.class_ (HH.ClassName "btn-hide")
-            , HP.title "Reset token"
-            ]
-            [ HH.text "\x1F511" ]
-        , HH.button
-            [ HE.onClick \_ -> ResetAll
-            , HP.class_ (HH.ClassName "btn-hide")
-            , HP.title "Reset all data"
-            ]
-            [ HH.text "\x2620" ]
+            [ HH.text "Source code" ]
         ]
+    ]
+
+-- | A single settings row with label, description,
+-- | and controls.
+settingsRow
+  :: forall w i
+   . String
+  -> String
+  -> Array (HH.HTML w i)
+  -> HH.HTML w i
+settingsRow label desc controls =
+  HH.div
+    [ HP.style
+        "display:flex; gap:12px; align-items:center; padding:8px 0; border-bottom:1px solid var(--border-subtle)"
+    ]
+    [ HH.div
+        [ HP.style "min-width:120px" ]
+        [ HH.div
+            [ HP.style
+                "font-size:13px; font-weight:500"
+            ]
+            [ HH.text label ]
+        , if desc /= "" then
+            HH.div
+              [ HP.style
+                  "font-size:11px; color:var(--text-dim)"
+              ]
+              [ HH.text desc ]
+          else HH.text ""
+        ]
+    , HH.div
+        [ HP.style
+            "display:flex; gap:8px; align-items:center; flex-wrap:wrap"
+        ]
+        controls
     ]
 
 activeIf :: Boolean -> String
