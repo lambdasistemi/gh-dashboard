@@ -667,6 +667,9 @@ renderItemRow state projId mSf (ProjectItem item) =
                 [ HH.text
                     ( fromMaybe ""
                         item.repoName
+                        <> case item.number of
+                          Just n -> "#" <> show n
+                          Nothing -> ""
                     )
                 ]
             ]
@@ -705,14 +708,7 @@ renderItemRow state projId mSf (ProjectItem item) =
           else
             HH.td_
               [ HH.span_
-                  ( [ HH.text
-                        ( case item.number of
-                            Just n ->
-                              "#" <> show n <> " "
-                            Nothing -> ""
-                        )
-                    ]
-                      <>
+                  (
                         ( if hasBranch then
                             [ HH.span
                                 [ HP.class_
