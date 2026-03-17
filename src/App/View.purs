@@ -115,50 +115,8 @@ renderDashboard state repos =
             [ renderFilters state
             , renderSettings state
             ]
-        ReposPage ->
-          HH.div_
-            ( ( if state.showAddRepo then
-                  [ HH.div
-                      [ HP.class_
-                          (HH.ClassName "add-repo-bar")
-                      ]
-                      [ HH.input
-                          [ HP.placeholder
-                              "https://github.com/owner/repo"
-                          , HP.value state.addRepoInput
-                          , HE.onValueInput
-                              SetAddRepoInput
-                          , HP.class_
-                              ( HH.ClassName
-                                  "filter-input"
-                              )
-                          ]
-                      , HH.button
-                          [ HE.onClick \_ ->
-                              SubmitAddRepo
-                          , HP.class_
-                              (HH.ClassName "btn-small")
-                          ]
-                          [ HH.text "Add" ]
-                      ]
-                  ]
-                else []
-              )
-                <>
-                  if null repos then
-                    [ HH.p
-                        [ HP.class_
-                            (HH.ClassName "muted")
-                        ]
-                        [ HH.text
-                            "No repositories found."
-                        ]
-                    ]
-                  else
-                    [ renderRepoTable state repos ]
-            )
-        ProjectsPage ->
-          renderProjects state
+        ReposPage -> renderKanban state
+        ProjectsPage -> renderKanban state
     ]
 
 -- | Toolbar with filter and controls.
@@ -225,56 +183,7 @@ renderToolbar state =
                 )
             ]
             [ HH.text "\x2699" ]
-        , HH.button
-            [ HE.onClick \_ ->
-                SwitchPage ReposPage
-            , HP.class_
-                ( HH.ClassName
-                    ( "tab-btn"
-                        <> activeIf
-                          ( state.currentPage
-                              == ReposPage
-                          )
-                    )
-                )
-            ]
-            [ HH.text "Repos" ]
-        , HH.button
-            [ HE.onClick \_ ->
-                SwitchPage ProjectsPage
-            , HP.class_
-                ( HH.ClassName
-                    ( "tab-btn"
-                        <> activeIf
-                          ( state.currentPage
-                              == ProjectsPage
-                          )
-                    )
-                )
-            ]
-            [ HH.text "Projects" ]
         ]
-    , if state.currentPage == ReposPage then
-        HH.button
-          [ HE.onClick \_ -> ToggleAddRepo
-          , HP.class_
-              ( HH.ClassName
-                  ( "btn-back"
-                      <> activeIf state.showAddRepo
-                  )
-              )
-          , HP.title "Add repository"
-          ]
-          [ HH.text "+" ]
-      else HH.text ""
-    , if state.currentPage == ReposPage then
-        HH.input
-          [ HP.placeholder "Filter repos..."
-          , HP.value state.filterText
-          , HE.onValueInput SetFilter
-          , HP.class_ (HH.ClassName "filter-input")
-          ]
-      else HH.text ""
     ]
 
 -- | Settings panel — clear labels, grouped sections.
