@@ -167,18 +167,24 @@ renderToolbar state =
                 )
             ]
             [ HH.text "Done" ]
-        , HH.button
+        ]
+    , HH.div
+        [ HP.class_
+            (HH.ClassName "toolbar-icons")
+        ]
+        [ HH.button
             [ HE.onClick \_ ->
                 SwitchPage FiltersPage
             , HP.class_
                 ( HH.ClassName
-                    ( "tab-btn"
+                    ( "toolbar-icon"
                         <> activeIf
                           ( state.currentPage
                               == FiltersPage
                           )
                     )
                 )
+            , HP.title "Filters"
             ]
             [ HH.text "\x2AF6" ]
         , HH.button
@@ -186,13 +192,14 @@ renderToolbar state =
                 SwitchPage SettingsPage
             , HP.class_
                 ( HH.ClassName
-                    ( "tab-btn"
+                    ( "toolbar-icon"
                         <> activeIf
                           ( state.currentPage
                               == SettingsPage
                           )
                     )
                 )
+            , HP.title "Settings"
             ]
             [ HH.text "\x2699" ]
         ]
