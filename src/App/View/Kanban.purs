@@ -385,7 +385,6 @@ renderKanban state =
                                 [ HH.text "Title" ]
                             , HH.th_
                                 [ HH.text "Repo" ]
-                            , HH.th_ []
                             ]
                         ]
                     , HH.tbody_
