@@ -80,6 +80,8 @@ import Effect.Class (liftEffect)
 import Lib.FFI.Cache as FFI.Cache
 import Lib.FFI.Clipboard (copyToClipboard)
 import Lib.FFI.Storage as FFIStorage
+import Halogen.Subscription as HS
+import Lib.FFI.Swipe (onSwipe)
 import Lib.FFI.Theme (setBodyTheme)
 import Halogen as H
 import Halogen.Aff as HA
@@ -209,6 +211,11 @@ handleAction = case _ of
   ------------------------------------------------
 
   Initialize -> do
+    { emitter, listener } <- liftEffect HS.create
+    _ <- H.subscribe emitter
+    liftEffect $ onSwipe
+      (HS.notify listener SwipeLeft)
+      (HS.notify listener SwipeRight)
     saved <- H.liftAff loadToken
     repoList <- liftEffect loadRepoList
     agentUrl <- liftEffect loadAgentServer
@@ -551,6 +558,19 @@ handleAction = case _ of
   ------------------------------------------------
   -- Toast notifications
   ------------------------------------------------
+
+  SwipeLeft -> do
+    st <- H.get
+    case st.currentPage of
+      BacklogPage -> handleAction (SwitchPage WIPPage)
+      WIPPage -> handleAction (SwitchPage DonePage)
+      _ -> pure unit
+  SwipeRight -> do
+    st <- H.get
+    case st.currentPage of
+      DonePage -> handleAction (SwitchPage WIPPage)
+      WIPPage -> handleAction (SwitchPage BacklogPage)
+      _ -> pure unit
 
   ShowToast msg level -> do
     st <- H.get

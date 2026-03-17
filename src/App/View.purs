@@ -100,6 +100,7 @@ renderDashboard state repos =
     [ HP.style "padding: 0.5em;" ]
     [ renderToasts state.toasts
     , renderToolbar state
+    , renderPageIndicator state.currentPage
     , case state.error of
         Just err ->
           HH.div
@@ -129,7 +130,7 @@ renderToolbar state =
                 SwitchPage BacklogPage
             , HP.class_
                 ( HH.ClassName
-                    ( "tab-btn"
+                    ( "tab-btn kanban-tab"
                         <> activeIf
                           ( state.currentPage
                               == BacklogPage
@@ -143,7 +144,7 @@ renderToolbar state =
                 SwitchPage WIPPage
             , HP.class_
                 ( HH.ClassName
-                    ( "tab-btn"
+                    ( "tab-btn kanban-tab"
                         <> activeIf
                           ( state.currentPage
                               == WIPPage
@@ -157,7 +158,7 @@ renderToolbar state =
                 SwitchPage DonePage
             , HP.class_
                 ( HH.ClassName
-                    ( "tab-btn"
+                    ( "tab-btn kanban-tab"
                         <> activeIf
                           ( state.currentPage
                               == DonePage
@@ -276,6 +277,44 @@ renderSettings state =
         ]
     ]
 
+
+-- | Page indicator dots for mobile swipe nav.
+renderPageIndicator
+  :: forall w i. Page -> HH.HTML w i
+renderPageIndicator page =
+  let
+    dot p label = HH.span
+      [ HP.class_
+          ( HH.ClassName
+              ( "page-dot"
+                  <> if page == p then " active"
+                    else ""
+              )
+          )
+      , HP.title label
+      ]
+      []
+    label = case page of
+      BacklogPage -> "Backlog"
+      WIPPage -> "WIP"
+      DonePage -> "Done"
+      _ -> ""
+  in
+    HH.div
+      [ HP.class_
+          (HH.ClassName "page-indicator")
+      ]
+      [ dot BacklogPage "Backlog"
+      , dot WIPPage "WIP"
+      , dot DonePage "Done"
+      , if label /= "" then
+          HH.span
+            [ HP.style
+                "font-size:11px; margin-left:4px"
+            ]
+            [ HH.text label ]
+        else HH.text ""
+      ]
 
 activeIf :: Boolean -> String
 activeIf true = " active"
