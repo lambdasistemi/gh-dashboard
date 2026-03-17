@@ -716,31 +716,29 @@ renderItemRow state projId mSf (ProjectItem item) =
           else
             HH.td_
               [ HH.span_
-                  (
-                        ( if hasBranch then
-                            [ HH.span
-                                [ HP.class_
-                                    ( HH.ClassName
-                                        "branch-badge"
-                                    )
-                                , HP.title
-                                    ( case branchInfo of
-                                        Just bi ->
-                                          bi.name
-                                            <> " ("
-                                            <> bi.sync
-                                            <> ")"
-                                        Nothing ->
-                                          "Has branch"
-                                    )
-                                ]
-                                [ HH.text "\x2387 " ]
+                  ( ( if hasBranch then
+                        [ HH.span
+                            [ HP.class_
+                                ( HH.ClassName
+                                    "branch-badge"
+                                )
+                            , HP.title
+                                ( case branchInfo of
+                                    Just bi ->
+                                      bi.name
+                                        <> " ("
+                                        <> bi.sync
+                                        <> ")"
+                                    Nothing ->
+                                      "Has branch"
+                                )
                             ]
-                          else []
-                        )
+                            [ HH.text "\x2387 " ]
+                        ]
+                      else []
+                    )
                       <>
-                        ( if hasWorktree && not isDone
-                            then
+                        ( if hasWorktree && not isDone then
                             [ HH.span
                                 [ HP.class_
                                     ( HH.ClassName
@@ -757,20 +755,20 @@ renderItemRow state projId mSf (ProjectItem item) =
                             case sessionState of
                               Just st
                                 | st == "running" ->
-                                  [ HH.span
-                                      [ HP.class_
-                                          ( HH.ClassName
-                                              "agent-badge"
-                                          )
-                                      , HP.title
-                                          ( "Agent: "
-                                              <> st
-                                          )
-                                      ]
-                                      [ HH.text
-                                          "\x25C9 "
-                                      ]
-                                  ]
+                                    [ HH.span
+                                        [ HP.class_
+                                            ( HH.ClassName
+                                                "agent-badge"
+                                            )
+                                        , HP.title
+                                            ( "Agent: "
+                                                <> st
+                                            )
+                                        ]
+                                        [ HH.text
+                                            "\x25C9 "
+                                        ]
+                                    ]
                               _ -> []
                           else []
                         )
@@ -797,26 +795,29 @@ renderItemRow state projId mSf (ProjectItem item) =
                                 "border:none; height:1px; background:var(--text-dim); margin:4px 10%; opacity:0.4; width:100%; flex-basis:100%"
                             ]
                         ]
-                          <> ( case item.repoName,
-                            item.number of
-                            Just repo, Just n ->
-                              [ refreshButton
-                                  ( RefreshProjectItem
-                                      projId
-                                      repo
-                                      n
-                                  )
-                              ]
-                                <>
-                                  if isWIP then
-                                    launchButton
-                                      state.launchedItems
-                                      key
-                                      repo
-                                      n
-                                  else []
-                            _, _ -> []
-                        )
+                          <>
+                            ( case
+                                item.repoName,
+                                item.number
+                                of
+                                Just repo, Just n ->
+                                  [ refreshButton
+                                      ( RefreshProjectItem
+                                          projId
+                                          repo
+                                          n
+                                      )
+                                  ]
+                                    <>
+                                      if isWIP then
+                                        launchButton
+                                          state.launchedItems
+                                          key
+                                          repo
+                                          n
+                                      else []
+                                _, _ -> []
+                            )
                           <>
                             case item.url of
                               Just url ->

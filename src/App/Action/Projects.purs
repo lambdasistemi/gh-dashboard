@@ -300,7 +300,8 @@ handleSetItemStatus dispatch projectId itemId newStatus = do
               Just { repo, issue } -> do
                 let
                   parts = Str.split
-                    (Pattern "/") repo
+                    (Pattern "/")
+                    repo
                   repoName = case parts of
                     [ _, name ] -> name
                     _ -> repo

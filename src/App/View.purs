@@ -191,8 +191,7 @@ renderToolbar state =
         [ HH.button
             [ HE.onClick \_ ->
                 SwitchPage
-                  ( if state.currentPage == FiltersPage
-                      then WIPPage
+                  ( if state.currentPage == FiltersPage then WIPPage
                     else FiltersPage
                   )
             , HP.class_
@@ -210,8 +209,7 @@ renderToolbar state =
         , HH.button
             [ HE.onClick \_ ->
                 SwitchPage
-                  ( if state.currentPage == SettingsPage
-                      then WIPPage
+                  ( if state.currentPage == SettingsPage then WIPPage
                     else SettingsPage
                   )
             , HP.class_
@@ -308,7 +306,6 @@ renderSettings state =
         ]
     ]
 
-
 -- | Page indicator dots for mobile swipe nav.
 renderPageIndicator
   :: forall w i. State -> HH.HTML w i
@@ -319,7 +316,8 @@ renderPageIndicator state =
       [ HP.class_
           ( HH.ClassName
               ( "page-dot"
-                  <> if page == p then " active"
+                  <>
+                    if page == p then " active"
                     else ""
               )
           )

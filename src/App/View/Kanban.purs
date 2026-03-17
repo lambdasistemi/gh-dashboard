@@ -118,7 +118,7 @@ renderProjectSetup state =
                   (HH.ClassName "kanban-project-list")
               ]
               ( map
-                  ( renderProjectOption state )
+                  (renderProjectOption state)
                   state.projects
               )
           , HH.div
@@ -268,8 +268,7 @@ renderFilters state =
                         )
                           <> "Labels"
                           <>
-                            if activeLabels > 0
-                            then
+                            if activeLabels > 0 then
                               " ("
                                 <> show activeLabels
                                 <> " active)"
@@ -295,8 +294,7 @@ renderFilters state =
                                             if
                                               Set.member
                                                 lbl
-                                                state.kanbanLabelFilters
-                                            then
+                                                state.kanbanLabelFilters then
                                               " active"
                                             else ""
                                       )
