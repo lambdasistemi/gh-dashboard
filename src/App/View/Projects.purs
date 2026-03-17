@@ -670,24 +670,6 @@ renderItemRow state projId mSf (ProjectItem item) =
                     )
                 ]
             ]
-        , if null item.labels then HH.text ""
-          else
-            HH.td
-              [ HP.class_
-                  (HH.ClassName "item-labels")
-              ]
-              ( map
-                  ( \lbl ->
-                      HH.span
-                        [ HP.class_
-                            ( HH.ClassName
-                                "label-tag"
-                            )
-                        ]
-                        [ HH.text lbl ]
-                  )
-                  item.labels
-              )
         , if isEditing then
             HH.td_
               [ HH.div
@@ -908,8 +890,34 @@ renderItemRow state projId mSf (ProjectItem item) =
                       (termElementId launchKey)
                   else renderMarkdownRow item.body
               _, _ -> renderMarkdownRow item.body
+            labels =
+              if null item.labels then []
+              else
+                [ HH.tr
+                    [ HP.class_
+                        (HH.ClassName "detail-row")
+                    ]
+                    [ HH.td
+                        [ HP.colSpan 3
+                        , HP.class_
+                            (HH.ClassName "item-labels")
+                        ]
+                        ( map
+                            ( \lbl ->
+                                HH.span
+                                  [ HP.class_
+                                      ( HH.ClassName
+                                          "label-tag"
+                                      )
+                                  ]
+                                  [ HH.text lbl ]
+                            )
+                            item.labels
+                        )
+                    ]
+                ]
           in
-            controls <> body
+            controls <> labels <> body
         else []
 
 -- | Previous column in the Kanban flow.
