@@ -713,6 +713,40 @@ renderItemRow state projId mSf (ProjectItem item) =
                           [ HH.text "\x2716" ]
                       ]
                     _ -> []
+                <>
+                  [ if curStatus /= "Backlog" then
+                      HH.button
+                        [ HP.class_
+                            (HH.ClassName "btn-small")
+                        , HE.onClick \_ ->
+                            SetItemStatus projId
+                              item.itemId
+                              (prevCol curStatus)
+                        , HP.attr
+                            (AttrName "onclick")
+                            "event.stopPropagation()"
+                        ]
+                        [ HH.text
+                            (prevCol curStatus)
+                        ]
+                    else HH.text ""
+                  , if curStatus /= "Done" then
+                      HH.button
+                        [ HP.class_
+                            (HH.ClassName "btn-small")
+                        , HE.onClick \_ ->
+                            SetItemStatus projId
+                              item.itemId
+                              (nextCol curStatus)
+                        , HP.attr
+                            (AttrName "onclick")
+                            "event.stopPropagation()"
+                        ]
+                        [ HH.text
+                            (nextCol curStatus)
+                        ]
+                    else HH.text ""
+                  ]
             )
         , if isEditing then
             HH.td_
@@ -860,49 +894,6 @@ renderItemRow state projId mSf (ProjectItem item) =
                     ( fromMaybe ""
                         item.repoName
                     )
-                ]
-            ]
-        , HH.td_
-            [ HH.span
-                [ HP.class_
-                    (HH.ClassName "move-buttons")
-                ]
-                [ if curStatus /= "Backlog" then
-                    HH.button
-                      [ HP.class_
-                          (HH.ClassName "btn-hide")
-                      , HP.title
-                          ( "Move to "
-                              <> prevCol curStatus
-                          )
-                      , HE.onClick \_ ->
-                          SetItemStatus projId
-                            item.itemId
-                            (prevCol curStatus)
-                      , HP.attr
-                          (AttrName "onclick")
-                          "event.stopPropagation()"
-                      ]
-                      [ HH.text "\x25C0" ]
-                  else HH.text ""
-                , if curStatus /= "Done" then
-                    HH.button
-                      [ HP.class_
-                          (HH.ClassName "btn-hide")
-                      , HP.title
-                          ( "Move to "
-                              <> nextCol curStatus
-                          )
-                      , HE.onClick \_ ->
-                          SetItemStatus projId
-                            item.itemId
-                            (nextCol curStatus)
-                      , HP.attr
-                          (AttrName "onclick")
-                          "event.stopPropagation()"
-                      ]
-                      [ HH.text "\x25B6" ]
-                  else HH.text ""
                 ]
             ]
         ]
