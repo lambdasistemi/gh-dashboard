@@ -15,6 +15,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Lib.Types (Page(..), Repo)
 import App.View.Kanban (renderFilters, renderKanban)
+import Lib.UI.Widgets (settingsRow)
 import App.View.Projects (renderProjects)
 import App.View.RepoTable (renderRepoTable)
 import App.View.Types (Action(..), State, Toast, ToastLevel(..))
@@ -368,40 +369,6 @@ renderSettings state =
         ]
     ]
 
--- | A single settings row with label, description,
--- | and controls.
-settingsRow
-  :: forall w i
-   . String
-  -> String
-  -> Array (HH.HTML w i)
-  -> HH.HTML w i
-settingsRow label desc controls =
-  HH.div
-    [ HP.style
-        "display:flex; gap:12px; align-items:center; padding:8px 0; border-bottom:1px solid var(--border-subtle)"
-    ]
-    [ HH.div
-        [ HP.style "min-width:120px" ]
-        [ HH.div
-            [ HP.style
-                "font-size:13px; font-weight:500"
-            ]
-            [ HH.text label ]
-        , if desc /= "" then
-            HH.div
-              [ HP.style
-                  "font-size:11px; color:var(--text-dim)"
-              ]
-              [ HH.text desc ]
-          else HH.text ""
-        ]
-    , HH.div
-        [ HP.style
-            "display:flex; gap:8px; align-items:center; flex-wrap:wrap"
-        ]
-        controls
-    ]
 
 activeIf :: Boolean -> String
 activeIf true = " active"
