@@ -792,7 +792,12 @@ renderItemRow state projId mSf (ProjectItem item) =
                       , HP.class_
                           (HH.ClassName "item-actions")
                       ]
-                      ( ( case item.repoName,
+                      ( [ HH.hr
+                            [ HP.style
+                                "border:none; height:1px; background:var(--text-dim); margin:4px 10%; opacity:0.4"
+                            ]
+                        ]
+                          <> ( case item.repoName,
                             item.number of
                             Just repo, Just n ->
                               [ refreshButton
@@ -879,6 +884,7 @@ renderItemRow state projId mSf (ProjectItem item) =
                               else HH.text ""
                             ]
                       )
+                      )
                   ]
               ]
             body = case item.repoName, item.number of
@@ -921,20 +927,7 @@ renderItemRow state projId mSf (ProjectItem item) =
                     ]
                 ]
           in
-            [ HH.tr
-                [ HP.class_
-                    (HH.ClassName "detail-row")
-                ]
-                [ HH.td
-                    [ HP.colSpan 3 ]
-                    [ HH.hr
-                        [ HP.style
-                            "border:none; height:1px; background:var(--text-dim); margin:4px 10%; opacity:0.4"
-                        ]
-                    ]
-                ]
-            ]
-              <> controls <> labels <> body
+            controls <> labels <> body
         else []
 
 -- | Previous column in the Kanban flow.
