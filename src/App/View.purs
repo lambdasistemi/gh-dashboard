@@ -211,12 +211,13 @@ renderSettings state =
         ]
         [ HH.text "Settings" ]
     -- Agent server
-    , settingsRow "Agent" ""
+    , settingsRow "Agent"
+        "URL of the agent daemon that manages sessions and worktrees"
         [ HH.input
             [ HP.value state.agentServer
             , HE.onValueInput SetAgentServer
-            , HP.class_
-                (HH.ClassName "filter-input")
+            , HP.style
+                "padding:6px 10px; border:1px solid var(--border); border-radius:4px; background:var(--bg-surface); color:var(--text); font-size:12px; outline:none; width:100%; box-sizing:border-box"
             , HP.placeholder "server URL"
             ]
         ]
