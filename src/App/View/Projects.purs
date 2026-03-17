@@ -814,7 +814,23 @@ renderItemRow state projId mSf (ProjectItem item) =
                               _ -> []
                           else []
                         )
-                      <> [ HH.text item.title ]
+                      <> case item.url of
+                        Just url ->
+                          [ HH.a
+                              [ HP.href url
+                              , HP.target "_blank"
+                              , HP.class_
+                                  ( HH.ClassName
+                                      "detail-link"
+                                  )
+                              , HP.attr
+                                  (AttrName "onclick")
+                                  "event.stopPropagation()"
+                              ]
+                              [ HH.text item.title ]
+                          ]
+                        Nothing ->
+                          [ HH.text item.title ]
                   )
               , if null item.labels then
                   HH.text ""
