@@ -4,69 +4,90 @@
 
 **[Live demo](https://lambdasistemi.github.io/gh-dashboard/)**
 
-Client-side GitHub dashboard — browse repos, issues, pull requests and projects on a single page. Runs entirely in the browser as a static page on GitHub Pages. Your token stays in localStorage and is sent only to the GitHub API.
+Kanban dashboard for GitHub — three-column board (Backlog / WIP / Done) backed by GitHub Projects v2, with integrated agent session management. Runs entirely in the browser as a static page on GitHub Pages.
+
+## How it works
+
+The app maps a single GitHub Project to a Kanban board with three fixed statuses:
+
+| Column | Meaning | Backend state |
+|--------|---------|---------------|
+| **Backlog** | To be worked on | No worktree, no session |
+| **WIP** | Active work | Worktree created, session can be launched |
+| **Done** | Completed | Worktree deleted, branch kept until cleanup |
+
+Moving items between columns triggers side effects on the [agent-daemon](https://github.com/lambdasistemi/agent-daemon):
+
+- **→ WIP**: creates a worktree and launches a session
+- **← from WIP**: stops any running session, deletes worktree
+- Branch and worktree status badges update in real time
 
 ## Features
 
-### Repositories
+### Kanban board
 
-- First connection seeds the 25 most recently updated repos; order persists in localStorage
-- Drag-and-drop reordering via ☰ handle
-- Add any public or private repo by URL; remove with the trash button
-- Live text filter across repo names and descriptions
+- Three swipeable columns on mobile (Backlog / WIP / Done)
+- Tap to expand issues — shows controls, labels, and full markdown body
+- Named action buttons: Launch, Open, Copy, and column transitions (Backlog/WIP/Done)
+- Issue number and repo shown per item with badges for branch, worktree, and session state
 
-### Issues & Pull Requests
+### Agent integration
 
-- Expandable detail panels per repo with independent Issues and PRs sections
-- Granular refresh — ↻ at section level reloads all; per-row buttons refresh a single item (including CI checks)
-- Progressive PR loading — PRs appear one at a time as CI checks are fetched
-- Collapsible sections — expanding an empty section auto-triggers a refresh
-- Hide / unhide items — hidden items grouped in a collapsible "Hidden" section, persisted across sessions
-- Label filtering — multi-select with OR logic, persisted in localStorage
-- CI status filtering — check run statuses (success, failure, pending) as filterable labels
-- Inline markdown rendering for issue and PR bodies
-- Copy titles to clipboard
+- Launch, detach and stop [agent-daemon](https://github.com/lambdasistemi/agent-daemon) sessions from WIP items
+- Inline xterm.js terminal for live session interaction
+- Branch sync status (synced, ahead, behind, local-only) from daemon API
 
-### GitHub Projects
+### Filters
 
-- Dedicated Projects tab with read/write support
-- Add, update and delete project items
-- Inline rename for projects
-- Status management (Todo, In Progress, Done, Backlog)
-- Copy project item titles to clipboard
+- Repository filter with collapsible org / repo tree
+- Label filter with alphabetical list
+- Filters apply across all three Kanban columns
 
-### Agent Daemon
+### Settings
 
-- Launch, detach and stop [agent-daemon](https://github.com/lambdasistemi/agent-daemon) sessions from issue and project item rows
-- Inline xterm.js terminal replaces the description body with a live WebSocket-connected terminal
-- Resizable terminals — drag the handle below each terminal to adjust height
-- Active terminal highlighting — rows with a running terminal get a blue accent border
+- Agent server URL configuration
+- GitHub API rate limit display
+- Dark / light theme toggle
+- Import / export settings as JSON
+- Reset token and data
 
-### UI
+### Mobile
 
-- Dark / light theme toggle, persisted in localStorage
-- Tooltips on all action icons
-- Rate limit display showing remaining GitHub API quota
-- Import / export settings as JSON (token excluded for security)
-- Reset button clears all saved data
-- Responsive design — mobile-friendly layout
+- Swipe left/right to navigate between all pages
+- Page indicator dots with current column name and item count
+- Stacked card layout — no tables on mobile
+- Controls inside expanded items, not cluttering the list
 
-## Token scopes
+## Setup
+
+### 1. GitHub token
 
 Create a [personal access token](https://github.com/settings/tokens/new?scopes=repo,read:project&description=gh-dashboard) with these scopes:
 
 | Scope | Required for |
 |-------|-------------|
-| `repo` | Repos, issues, PRs, CI checks |
-| `read:project` | Projects tab |
+| `repo` | Issues, PRs, CI checks |
+| `read:project` | Project board read/write |
+
+### 2. GitHub Project
+
+The app requires a GitHub Project with exactly three status options:
+
+- **Backlog**
+- **WIP**
+- **Done**
+
+On first load, select your project in the setup screen. If you don't have one, create it and rename the default statuses (Todo → Backlog, In Progress → WIP, Done stays).
+
+### 3. Agent daemon (optional)
+
+Set the agent server URL in Settings to enable session management, worktree creation, and branch tracking.
 
 ## Stack
 
 PureScript · Halogen · GitHub REST & GraphQL API · marked.js · xterm.js · esbuild · Nix
 
 ## Development
-
-Enter the Nix devShell:
 
 ```bash
 nix develop
