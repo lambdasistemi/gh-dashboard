@@ -261,6 +261,7 @@ handleAction = case _ of
           WIPPage -> pure unit
           DonePage -> pure unit
           FiltersPage -> pure unit
+          SettingsPage -> pure unit
           ReposPage -> do
             -- Show cached repos instantly
             _ <- loadCachedRepos
@@ -459,6 +460,7 @@ handleAction = case _ of
       WIPPage -> pure unit
       DonePage -> pure unit
       FiltersPage -> pure unit
+      SettingsPage -> pure unit
       ProjectsPage ->
         when (null st.projects) do
           handleAction RefreshProjects
