@@ -32,9 +32,9 @@ renderAgents state =
   HH.div
     [ HP.class_ (HH.ClassName "agents-view") ]
     [ renderAgentHeader state
-    , if Map.isEmpty state.agentSessions
-        && Set.isEmpty state.agentWorktrees
-        then renderEmptyState state
+    , if
+        Map.isEmpty state.agentSessions
+          && Set.isEmpty state.agentWorktrees then renderEmptyState state
       else renderSessionList state
     ]
 
@@ -61,17 +61,16 @@ renderAgentHeader state =
               ]
           else HH.text ""
         ]
-    , if not (Map.isEmpty state.agentSessions)
-        then
-          let
-            statuses = collectStatuses state
-          in
-            if length statuses > 1 then
-              renderLabelSelector
-                state.sessionFilters
-                ToggleSessionFilter
-                statuses
-            else HH.text ""
+    , if not (Map.isEmpty state.agentSessions) then
+        let
+          statuses = collectStatuses state
+        in
+          if length statuses > 1 then
+            renderLabelSelector
+              state.sessionFilters
+              ToggleSessionFilter
+              statuses
+          else HH.text ""
       else HH.text ""
     ]
 
@@ -97,8 +96,9 @@ renderSessionList
   :: forall w. State -> HH.HTML w Action
 renderSessionList state =
   let
-    entries = Map.toUnfoldable state.agentSessions
-      :: Array (Tuple String AgentSession)
+    entries =
+      Map.toUnfoldable state.agentSessions
+        :: Array (Tuple String AgentSession)
     filtered =
       if Set.isEmpty state.sessionFilters then
         entries
@@ -108,12 +108,13 @@ renderSessionList state =
               state.sessionFilters
         )
         entries
-    worktreeOnly = Set.toUnfoldable
-      ( Set.difference state.agentWorktrees
-          ( Set.fromFoldable
-              (map (\(Tuple k _) -> k) entries)
-          )
-      ) :: Array String
+    worktreeOnly =
+      Set.toUnfoldable
+        ( Set.difference state.agentWorktrees
+            ( Set.fromFoldable
+                (map (\(Tuple k _) -> k) entries)
+            )
+        ) :: Array String
   in
     HH.div
       [ HP.class_ (HH.ClassName "agents-list") ]

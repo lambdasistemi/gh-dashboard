@@ -530,9 +530,8 @@ handleAction = case _ of
   ToggleKanbanLabelFilter label ->
     H.modify_ \s -> s
       { kanbanLabelFilters =
-          if Set.member label s.kanbanLabelFilters
-            then Set.delete label s.kanbanLabelFilters
-            else Set.insert label s.kanbanLabelFilters
+          if Set.member label s.kanbanLabelFilters then Set.delete label s.kanbanLabelFilters
+          else Set.insert label s.kanbanLabelFilters
       }
   SetKanbanProject projId -> do
     H.modify_ _ { kanbanProject = Just projId }

@@ -55,10 +55,10 @@ parseRepoName input =
 -- | Insert or update a repo in the array.
 upsertRepo :: Repo -> Array Repo -> Array Repo
 upsertRepo repo@(Repo r) repos =
-  if Array.any
-    (\(Repo x) -> x.fullName == r.fullName)
-    repos
-  then
+  if
+    Array.any
+      (\(Repo x) -> x.fullName == r.fullName)
+      repos then
     map
       ( \(Repo x) ->
           if x.fullName == r.fullName then repo
