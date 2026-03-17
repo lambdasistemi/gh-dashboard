@@ -564,10 +564,14 @@ handleAction = case _ of
     case st.currentPage of
       BacklogPage -> handleAction (SwitchPage WIPPage)
       WIPPage -> handleAction (SwitchPage DonePage)
+      DonePage -> handleAction (SwitchPage FiltersPage)
+      FiltersPage -> handleAction (SwitchPage SettingsPage)
       _ -> pure unit
   SwipeRight -> do
     st <- H.get
     case st.currentPage of
+      SettingsPage -> handleAction (SwitchPage FiltersPage)
+      FiltersPage -> handleAction (SwitchPage DonePage)
       DonePage -> handleAction (SwitchPage WIPPage)
       WIPPage -> handleAction (SwitchPage BacklogPage)
       _ -> pure unit
