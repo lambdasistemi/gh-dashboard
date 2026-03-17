@@ -656,7 +656,10 @@ renderItemRow state projId mSf (ProjectItem item) =
         [ HE.onClick \_ -> ToggleItem key
         , HP.class_ (HH.ClassName rowClass)
         ]
-        [ HH.td_
+        [ HH.td
+            [ HP.class_
+                (HH.ClassName "item-actions")
+            ]
             ( ( case item.repoName, item.number of
                   Just repo, Just n ->
                     [ refreshButton
@@ -849,19 +852,6 @@ renderItemRow state projId mSf (ProjectItem item) =
                           else []
                         )
                       <> [ HH.text item.title ]
-                      <>
-                        ( if isWIP then
-                            case item.repoName,
-                              item.number of
-                              Just repo, Just n ->
-                                launchButton
-                                  state.launchedItems
-                                  key
-                                  repo
-                                  n
-                              _, _ -> []
-                          else []
-                        )
                   )
               , if null item.labels then
                   HH.text ""
