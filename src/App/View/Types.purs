@@ -88,6 +88,8 @@ data Action
   | SetAgentServer String
   | RefreshAgentSessions
   | ToggleSessionFilter String
+  | SwipeLeft
+  | SwipeRight
   | ShowToast String ToastLevel
   | DismissToast Int
 
