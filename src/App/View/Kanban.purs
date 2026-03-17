@@ -214,7 +214,7 @@ renderProjectOption state (Project p) =
             ]
       ]
 
--- | Filters pane — repo and label selectors.
+-- | Filters pane — collapsible repo and label selectors.
 renderFilters
   :: forall w. State -> HH.HTML w Action
 renderFilters state =
@@ -233,6 +233,9 @@ renderFilters state =
           state.projectRepoFilters
         activeLabels = Set.size
           state.kanbanLabelFilters
+        totalActive = activeRepos + activeLabels
+        isOpen = Set.member "kanban-filters"
+          state.expandedItems
       in
         HH.div
           [ HP.class_
@@ -240,56 +243,79 @@ renderFilters state =
           ]
           [ HH.div
               [ HP.class_
-                  (HH.ClassName "detail-heading")
+                  ( HH.ClassName
+                      "detail-heading clickable"
+                  )
+              , HE.onClick \_ ->
+                  ToggleItem "kanban-filters"
               ]
-              [ HH.text "Filters"
+              [ HH.text
+                  ( ( if isOpen then "\x25BE "
+                      else "\x25B8 "
+                    )
+                      <> "Filters"
+                      <>
+                        if totalActive > 0 then
+                          " (" <> show totalActive
+                            <> " active)"
+                        else ""
+                  )
               , refreshButton
                   (RefreshProjectItems projId)
               ]
-          , settingsRow "Repositories"
-              ( if activeRepos > 0 then
-                  show activeRepos <> " selected"
-                else "Show all"
-              )
-              [ renderRepoFilter state items ]
-          , settingsRow "Labels"
-              ( if activeLabels > 0 then
-                  show activeLabels <> " selected"
-                else "Show all"
-              )
-              [ if null allLabels then
-                  HH.span
-                    [ HP.class_
-                        (HH.ClassName "muted")
-                    ]
-                    [ HH.text "No labels" ]
-                else
-                  HH.div_
-                    ( map
-                        ( \lbl ->
-                            HH.div
-                              [ HP.class_
-                                  ( HH.ClassName
-                                      ( "filter-row clickable"
-                                          <>
-                                            if
-                                              Set.member
-                                                lbl
-                                                state.kanbanLabelFilters
-                                            then
-                                              " active"
-                                            else ""
-                                      )
-                                  )
-                              , HE.onClick \_ ->
-                                  ToggleKanbanLabelFilter
-                                    lbl
-                              ]
-                              [ HH.text lbl ]
-                        )
-                        allLabels
+          , if not isOpen then HH.text ""
+            else
+              HH.div_
+                [ settingsRow "Repositories"
+                    ( if activeRepos > 0 then
+                        show activeRepos
+                          <> " selected"
+                      else "Show all"
                     )
-              ]
+                    [ renderRepoFilter state items
+                    ]
+                , settingsRow "Labels"
+                    ( if activeLabels > 0 then
+                        show activeLabels
+                          <> " selected"
+                      else "Show all"
+                    )
+                    [ if null allLabels then
+                        HH.span
+                          [ HP.class_
+                              (HH.ClassName "muted")
+                          ]
+                          [ HH.text "No labels" ]
+                      else
+                        HH.div_
+                          ( map
+                              ( \lbl ->
+                                  HH.div
+                                    [ HP.class_
+                                        ( HH.ClassName
+                                            ( "filter-row clickable"
+                                                <>
+                                                  if
+                                                    Set.member
+                                                      lbl
+                                                      state.kanbanLabelFilters
+                                                  then
+                                                    " active"
+                                                  else
+                                                    ""
+                                            )
+                                        )
+                                    , HE.onClick
+                                        \_ ->
+                                          ToggleKanbanLabelFilter
+                                            lbl
+                                    ]
+                                    [ HH.text lbl ]
+                              )
+                              allLabels
+                          )
+                    ]
+                ]
           ]
 
 -- | Main kanban view — renders the current column
