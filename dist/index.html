@@ -79,8 +79,10 @@
     .repo-row { cursor: pointer; transition: background 0.15s; }
     .repo-row:hover { background: var(--bg-surface); }
     .repo-row td { padding: 10px 12px; border-bottom: 1px solid var(--border-subtle); }
-    .repo-row.expanded, .repo-row.expanded td, .repo-row.expanded * { background: var(--detail-bg) !important; border-bottom: none; }
-    .detail-row, .detail-row td, .detail-row * { background: var(--detail-bg) !important; }
+    .repo-row.expanded { background: var(--detail-bg); }
+    .repo-row.expanded td { background: var(--detail-bg); border-bottom: none; }
+    .detail-row { background: var(--detail-bg); }
+    .detail-row td { background: var(--detail-bg); }
     .repo-name { color: var(--text); font-weight: 500; font-size: 14px; }
     .repo-name:hover { color: var(--text); }
     .repo-desc { color: var(--text-muted); font-size: 12px; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -231,7 +233,7 @@
       .detail-table, .detail-table thead, .detail-table tbody, .detail-table tr, .detail-table th, .detail-table td { display: block; margin: 0; border-spacing: 0; }
       .detail-table thead { display: none; }
       .detail-table .repo-row { border-bottom: 1px solid var(--border-subtle); padding: 6px 0; }
-      .detail-table .repo-row.expanded { border-bottom: none; padding-bottom: 0; }
+      .detail-table .repo-row.expanded { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
       .detail-table .repo-row td { padding: 2px 8px; border: none; }
       .detail-table .detail-row { padding: 0; }
       .detail-table .detail-row td { padding: 0 8px; border: none; }
