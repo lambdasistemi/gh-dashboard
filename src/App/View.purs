@@ -109,7 +109,11 @@ renderDashboard state repos =
         BacklogPage -> renderKanban state
         WIPPage -> renderKanban state
         DonePage -> renderKanban state
-        FiltersPage -> renderFilters state
+        FiltersPage ->
+          HH.div_
+            [ renderFilters state
+            , renderSettings state
+            ]
         ReposPage ->
           HH.div_
             ( ( if state.showAddRepo then
@@ -270,69 +274,89 @@ renderToolbar state =
           , HP.class_ (HH.ClassName "filter-input")
           ]
       else HH.text ""
-    , renderRateLimit state.rateLimit
+    ]
+
+-- | Settings panel rendered inside the Filters pane.
+renderSettings
+  :: forall w. State -> HH.HTML w Action
+renderSettings state =
+  HH.div
+    [ HP.class_
+        (HH.ClassName "detail-section")
+    ]
+    [ HH.div
+        [ HP.class_
+            (HH.ClassName "detail-heading")
+        ]
+        [ HH.text "Settings" ]
     , HH.div
         [ HP.class_
-            (HH.ClassName "toolbar-spacer")
+            (HH.ClassName "add-repo-bar")
         ]
-        []
-    , HH.input
-        [ HP.placeholder "Agent server"
-        , HP.value state.agentServer
-        , HE.onValueInput SetAgentServer
-        , HP.class_
-            (HH.ClassName "filter-input agent-input")
-        , HP.title "Agent daemon URL"
-        ]
-    , HH.span
-        [ HE.onClick \_ -> ToggleTheme
-        , HP.class_
-            (HH.ClassName "theme-toggle")
-        , HP.title "Toggle theme"
-        ]
-        [ HH.text
-            ( if state.darkTheme then "\x263E"
-              else "\x2600"
-            )
-        ]
-    , HH.a
-        [ HP.href
-            "https://github.com/lambdasistemi/gh-dashboard"
-        , HP.target "_blank"
-        , HP.class_ (HH.ClassName "link-btn")
-        , HP.title "Source code"
-        ]
-        [ HH.img
-            [ HP.src
-                "https://github.githubassets.com/favicons/favicon-dark.svg"
-            , HP.width 16
-            , HP.height 16
+        [ HH.input
+            [ HP.placeholder "Agent server URL"
+            , HP.value state.agentServer
+            , HE.onValueInput SetAgentServer
+            , HP.class_
+                (HH.ClassName "filter-input")
+            , HP.title "Agent daemon URL"
             ]
         ]
-    , HH.button
-        [ HE.onClick \_ -> ExportStorage
-        , HP.class_ (HH.ClassName "btn-hide")
-        , HP.title "Export settings"
+    , HH.div
+        [ HP.class_
+            (HH.ClassName "add-repo-bar")
         ]
-        [ HH.text "\x2B07" ]
-    , HH.button
-        [ HE.onClick \_ -> ImportStorage
-        , HP.class_ (HH.ClassName "btn-hide")
-        , HP.title "Import settings"
+        [ renderRateLimit state.rateLimit
+        , HH.span
+            [ HE.onClick \_ -> ToggleTheme
+            , HP.class_
+                (HH.ClassName "theme-toggle")
+            , HP.title "Toggle theme"
+            ]
+            [ HH.text
+                ( if state.darkTheme then "\x263E"
+                  else "\x2600"
+                )
+            ]
+        , HH.a
+            [ HP.href
+                "https://github.com/lambdasistemi/gh-dashboard"
+            , HP.target "_blank"
+            , HP.class_ (HH.ClassName "link-btn")
+            , HP.title "Source code"
+            ]
+            [ HH.img
+                [ HP.src
+                    "https://github.githubassets.com/favicons/favicon-dark.svg"
+                , HP.width 16
+                , HP.height 16
+                ]
+            ]
+        , HH.button
+            [ HE.onClick \_ -> ExportStorage
+            , HP.class_ (HH.ClassName "btn-hide")
+            , HP.title "Export settings"
+            ]
+            [ HH.text "\x2B07" ]
+        , HH.button
+            [ HE.onClick \_ -> ImportStorage
+            , HP.class_ (HH.ClassName "btn-hide")
+            , HP.title "Import settings"
+            ]
+            [ HH.text "\x2B06" ]
+        , HH.button
+            [ HE.onClick \_ -> ResetToken
+            , HP.class_ (HH.ClassName "btn-hide")
+            , HP.title "Reset token"
+            ]
+            [ HH.text "\x1F511" ]
+        , HH.button
+            [ HE.onClick \_ -> ResetAll
+            , HP.class_ (HH.ClassName "btn-hide")
+            , HP.title "Reset all data"
+            ]
+            [ HH.text "\x2620" ]
         ]
-        [ HH.text "\x2B06" ]
-    , HH.button
-        [ HE.onClick \_ -> ResetToken
-        , HP.class_ (HH.ClassName "btn-hide")
-        , HP.title "Reset token"
-        ]
-        [ HH.text "\x1F511" ]
-    , HH.button
-        [ HE.onClick \_ -> ResetAll
-        , HP.class_ (HH.ClassName "btn-hide")
-        , HP.title "Reset all data"
-        ]
-        [ HH.text "\x2620" ]
     ]
 
 activeIf :: Boolean -> String
