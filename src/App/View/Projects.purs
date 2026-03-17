@@ -645,6 +645,7 @@ renderItemRow state projId mSf (ProjectItem item) =
     isWIP = curStatus == "WIP"
     isDone = curStatus == "Done"
     rowClass = "repo-row"
+      <> (if isOpen then " expanded" else "")
       <>
         if hasTerminal then " terminal-active"
         else if sessionState == Just "running" then
