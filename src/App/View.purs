@@ -211,28 +211,14 @@ renderSettings state =
         ]
         [ HH.text "Settings" ]
     -- Agent server
-    , settingsRow "Agent server"
-        "URL of the agent daemon that manages sessions and worktrees"
+    , settingsRow "Agent" ""
         [ HH.input
             [ HP.value state.agentServer
             , HE.onValueInput SetAgentServer
             , HP.class_
                 (HH.ClassName "filter-input")
-            , HP.placeholder
-                "https://your-server:8443"
+            , HP.placeholder "server URL"
             ]
-        , if state.agentServer /= "" then
-            HH.span
-              [ HP.class_
-                  (HH.ClassName "badge badge-public")
-              ]
-              [ HH.text "connected" ]
-          else
-            HH.span
-              [ HP.class_
-                  (HH.ClassName "badge badge-private")
-              ]
-              [ HH.text "not set" ]
         ]
     -- Rate limit
     , settingsRow "GitHub API"
