@@ -29,6 +29,7 @@ import Lib.Types
   , StatusField
   )
 import App.View.Projects (renderItemRow, renderRepoFilter)
+import Lib.UI.Widgets (settingsRow)
 import App.View.Widgets (refreshButton)
 import App.View.Types (Action(..), State)
 
@@ -228,6 +229,8 @@ renderFilters state =
           (Map.lookup projId state.projectItems)
         allLabels = sort $ nubEq $ items >>=
           \(ProjectItem pi) -> pi.labels
+        activeRepos = Set.size
+          state.projectRepoFilters
         activeLabels = Set.size
           state.kanbanLabelFilters
       in
@@ -243,46 +246,23 @@ renderFilters state =
               , refreshButton
                   (RefreshProjectItems projId)
               ]
-          , renderRepoFilter state items
-          , HH.div
-              [ HP.class_
-                  (HH.ClassName "detail-section")
-              ]
-              [ HH.div
-                  [ HP.class_
-                      ( HH.ClassName
-                          "detail-heading clickable"
-                      )
-                  , HE.onClick \_ ->
-                      ToggleItem "kanban-label-filter"
-                  ]
-                  [ HH.text
-                      ( ( if
-                            Set.member
-                              "kanban-label-filter"
-                              state.expandedItems
-                          then "\x25BE "
-                          else "\x25B8 "
-                        )
-                          <> "Labels"
-                          <>
-                            if activeLabels > 0 then
-                              " (" <> show activeLabels
-                                <> " active)"
-                            else ""
-                      )
-                  ]
-              , if
-                  not
-                    ( Set.member "kanban-label-filter"
-                        state.expandedItems
-                    ) then HH.text ""
-                else if null allLabels then
-                  HH.p
+          , settingsRow "Repositories"
+              ( if activeRepos > 0 then
+                  show activeRepos <> " selected"
+                else "Show all"
+              )
+              [ renderRepoFilter state items ]
+          , settingsRow "Labels"
+              ( if activeLabels > 0 then
+                  show activeLabels <> " selected"
+                else "Show all"
+              )
+              [ if null allLabels then
+                  HH.span
                     [ HP.class_
                         (HH.ClassName "muted")
                     ]
-                    [ HH.text "No labels found" ]
+                    [ HH.text "No labels" ]
                 else
                   HH.div_
                     ( map
@@ -293,7 +273,8 @@ renderFilters state =
                                       ( "filter-row clickable"
                                           <>
                                             if
-                                              Set.member lbl
+                                              Set.member
+                                                lbl
                                                 state.kanbanLabelFilters
                                             then
                                               " active"

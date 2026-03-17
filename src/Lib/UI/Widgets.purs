@@ -3,6 +3,7 @@
 module Lib.UI.Widgets
   ( collectLabels
   , renderLabelSelector
+  , settingsRow
   ) where
 
 import Prelude
@@ -13,6 +14,40 @@ import Data.Set as Set
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+
+-- | A settings row with label, description, controls.
+settingsRow
+  :: forall w i
+   . String
+  -> String
+  -> Array (HH.HTML w i)
+  -> HH.HTML w i
+settingsRow label desc controls =
+  HH.div
+    [ HP.style
+        "display:flex; gap:12px; align-items:center; padding:8px 0; border-bottom:1px solid var(--border-subtle)"
+    ]
+    [ HH.div
+        [ HP.style "min-width:120px" ]
+        [ HH.div
+            [ HP.style
+                "font-size:13px; font-weight:500"
+            ]
+            [ HH.text label ]
+        , if desc /= "" then
+            HH.div
+              [ HP.style
+                  "font-size:11px; color:var(--text-dim)"
+              ]
+              [ HH.text desc ]
+          else HH.text ""
+        ]
+    , HH.div
+        [ HP.style
+            "display:flex; gap:8px; align-items:center; flex-wrap:wrap; flex:1"
+        ]
+        controls
+    ]
 
 -- | Collect unique label names with counts from items.
 collectLabels
