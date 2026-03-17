@@ -284,16 +284,13 @@ renderFilters state =
                     ]
                     [ HH.text "No labels found" ]
                 else
-                  HH.div
-                    [ HP.class_
-                        (HH.ClassName "label-selector")
-                    ]
+                  HH.div_
                     ( map
                         ( \lbl ->
-                            HH.span
+                            HH.div
                               [ HP.class_
                                   ( HH.ClassName
-                                      ( "label-tag clickable"
+                                      ( "filter-row clickable"
                                           <>
                                             if
                                               Set.member lbl
