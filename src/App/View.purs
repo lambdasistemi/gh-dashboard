@@ -188,7 +188,16 @@ renderToolbar state =
         [ HP.class_
             (HH.ClassName "toolbar-icons")
         ]
-        [ HH.button
+        [ HH.a
+            [ HP.href
+                "https://lambdasistemi.github.io/gh-dashboard/docs/"
+            , HP.target "_blank"
+            , HP.class_
+                (HH.ClassName "toolbar-icon")
+            , HP.title "Docs"
+            ]
+            [ HH.text "\x1F4D6" ]
+        , HH.button
             [ HE.onClick \_ ->
                 SwitchPage
                   ( if state.currentPage == FiltersPage then WIPPage
