@@ -22,15 +22,15 @@ jobs:
     env:
       PATH: /run/current-system/sw/bin:/usr/bin:/bin
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: cachix/cachix-action@v15
         with:
           name: paolino
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - run: nix develop --quiet --command just bundle
       - run: nix develop --quiet --command just build-docs
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
