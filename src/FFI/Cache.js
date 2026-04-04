@@ -60,6 +60,8 @@ export function putCachedResponseImpl(url) {
             .then((db) => {
               const tx = db.transaction("responses", "readwrite");
               const store = tx.objectStore("responses");
+              const key = url.startsWith("graphql:") ? "graphql:..." : url;
+              console.log("[cache] PUT", key);
               store.put({
                 url: url,
                 etag: etag,
