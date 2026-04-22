@@ -946,32 +946,47 @@ renderEdges
    . Array Edge
   -> Array (HH.HTML w Action)
 renderEdges edges =
-  if null edges then []
-  else
-    let
-      group kind =
-        filter (\(Edge e) -> e.kind == kind) edges
-      section label kind =
-        let
-          es = group kind
-        in
-          if null es then []
-          else [ renderEdgeGroup label es ]
-    in
-      [ HH.tr
-          [ HP.class_ (HH.ClassName "detail-row") ]
-          [ HH.td
-              [ HP.colSpan 3
-              , HP.style
-                  "padding:6px 10px; font-size:12px"
-              ]
-              ( section "Blocked by" EdgeBlockedBy
-                  <> section "Blocking" EdgeBlocking
-                  <> section "Tracks" EdgeTracks
-                  <> section "Tracked in" EdgeTrackedIn
-              )
-          ]
-      ]
+  let
+    group kind =
+      filter (\(Edge e) -> e.kind == kind) edges
+    section label kind =
+      let
+        es = group kind
+      in
+        if null es then []
+        else [ renderEdgeGroup label es ]
+    heading =
+      HH.div
+        [ HP.style
+            "color:var(--text-dim); font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin:0 0 4px"
+        ]
+        [ HH.text "Dependencies" ]
+    empty =
+      HH.div
+        [ HP.style
+            "color:var(--text-dim); font-style:italic"
+        ]
+        [ HH.text
+            "No dependencies detected. Add a native \"Blocked by\" link on GitHub, a task-list entry, or a \"blocked by owner/repo#N\" line in the body."
+        ]
+    inner =
+      if null edges then [ empty ]
+      else
+        section "Blocked by" EdgeBlockedBy
+          <> section "Blocking" EdgeBlocking
+          <> section "Tracks" EdgeTracks
+          <> section "Tracked in" EdgeTrackedIn
+  in
+    [ HH.tr
+        [ HP.class_ (HH.ClassName "detail-row") ]
+        [ HH.td
+            [ HP.colSpan 3
+            , HP.style
+                "padding:8px 10px; font-size:12px; border-top:1px dashed var(--border)"
+            ]
+            ([ heading ] <> inner)
+        ]
+    ]
 
 renderEdgeGroup
   :: forall w
