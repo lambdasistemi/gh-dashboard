@@ -53,7 +53,7 @@ import Data.Array (catMaybes, head, mapMaybe)
 import Data.Array (head) as Array
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..), hush)
-import Data.Maybe (Maybe(..), isNothing)
+import Data.Maybe (Maybe(..), fromMaybe, isNothing)
 import Data.Array (intercalate)
 import Data.Traversable (traverse)
 import Data.HTTP.Method (Method(..))
@@ -62,10 +62,14 @@ import Effect.Exception (message)
 import Fetch (fetch)
 import Lib.FFI.Cache as Cache
 import Lib.Types
-  ( Project(..)
+  ( Edge(..)
+  , EdgeKind(..)
+  , EdgeSource(..)
+  , Project(..)
   , ProjectItem(..)
   , StatusField
   )
+import Lib.Util.EdgeParse (parseBodyEdges)
 
 ------------------------------------------------------------
 -- Core GraphQL transport
@@ -212,7 +216,20 @@ projectItemsQuery =
           } }
           content {
             ... on Issue { title url number body
-              repository { nameWithOwner } }
+              repository { nameWithOwner }
+              blockedBy(first: 20) { nodes {
+                number url title
+                repository { nameWithOwner } } }
+              blocking(first: 20) { nodes {
+                number url title
+                repository { nameWithOwner } } }
+              trackedIssues(first: 20) { nodes {
+                number url title
+                repository { nameWithOwner } } }
+              trackedInIssues(first: 20) { nodes {
+                number url title
+                repository { nameWithOwner } } }
+            }
             ... on PullRequest { title url number body
               repository { nameWithOwner } }
             ... on DraftIssue { id title body }
@@ -602,6 +619,34 @@ parseProjectItem json = case toObject json of
                 "Status"
                 fvNodes
               labels_ = extractLabels fvNodes
+              selfRepo = fromMaybe "" repoName_
+              nativeEdges =
+                extractEdgeConnection selfRepo
+                  SourceNative
+                  EdgeBlockedBy
+                  "blockedBy"
+                  contentJson
+                  <> extractEdgeConnection selfRepo
+                    SourceNative
+                    EdgeBlocking
+                    "blocking"
+                    contentJson
+              trackEdges =
+                extractEdgeConnection selfRepo
+                  SourceTaskList
+                  EdgeTracks
+                  "trackedIssues"
+                  contentJson
+                  <> extractEdgeConnection selfRepo
+                    SourceTaskList
+                    EdgeTrackedIn
+                    "trackedInIssues"
+                    contentJson
+              bodyEdges = case body_ of
+                Just b -> parseBodyEdges selfRepo b
+                Nothing -> []
+              edges_ =
+                nativeEdges <> trackEdges <> bodyEdges
             Right $ Just $ ProjectItem
               { itemId: itemId_
               , draftId: draftId_
@@ -613,6 +658,7 @@ parseProjectItem json = case toObject json of
               , labels: labels_
               , number: number_
               , body: body_
+              , edges: edges_
               }
 
 -- | Extract a single-select field value by name.
@@ -638,6 +684,62 @@ extractFieldValue fieldName nodes =
             Left _ -> Nothing
     )
     nodes
+
+-- | Extract the nodes of a named connection
+-- | (`blockedBy`, `blocking`, `trackedIssues`,
+-- | `trackedInIssues`) on an Issue content node, turning
+-- | each node into an `Edge` of the given kind and
+-- | source.
+extractEdgeConnection
+  :: String
+  -> EdgeSource
+  -> EdgeKind
+  -> String
+  -> Json
+  -> Array Edge
+extractEdgeConnection selfRepo source kind field contentJson =
+  case toObject contentJson of
+    Nothing -> []
+    Just obj ->
+      case obj .: field of
+        Left _ -> []
+        Right connJson ->
+          case toObject connJson of
+            Nothing -> []
+            Just connObj ->
+              case connObj .: "nodes" of
+                Left _ -> []
+                Right (nodes :: Array Json) ->
+                  mapMaybe (parseEdgeNode selfRepo source kind)
+                    nodes
+
+parseEdgeNode
+  :: String
+  -> EdgeSource
+  -> EdgeKind
+  -> Json
+  -> Maybe Edge
+parseEdgeNode selfRepo source kind nodeJson = do
+  obj <- toObject nodeJson
+  num <- hush (obj .: "number") :: Maybe Int
+  let
+    title_ = hush (obj .: "title") :: Maybe String
+    url_ = hush (obj .: "url") :: Maybe String
+    repo_ = case obj .: "repository" of
+      Right repoJson -> case toObject repoJson of
+        Just repoObj -> case repoObj .: "nameWithOwner" of
+          Right n -> n
+          Left _ -> selfRepo
+        Nothing -> selfRepo
+      Left _ -> selfRepo
+  pure $ Edge
+    { kind
+    , source
+    , repo: repo_
+    , number: num
+    , title: title_
+    , url: url_
+    }
 
 -- | Extract labels from field value nodes.
 extractLabels :: Array Json -> Array String
