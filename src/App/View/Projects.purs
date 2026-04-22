@@ -19,7 +19,14 @@ import Halogen.HTML as HH
 import Halogen.HTML.Core (AttrName(..))
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Lib.Types (Project(..), ProjectItem(..), StatusField)
+import Lib.Types
+  ( Edge(..)
+  , EdgeKind(..)
+  , EdgeSource(..)
+  , Project(..)
+  , ProjectItem(..)
+  , StatusField
+  )
 import App.View.Widgets
   ( copyButton
   , launchButton
@@ -926,9 +933,107 @@ renderItemRow state projId mSf (ProjectItem item) =
                         )
                     ]
                 ]
+            edgesRows = renderEdges item.edges
           in
-            controls <> labels <> body
+            controls <> labels <> edgesRows <> body
         else []
+
+-- | Render grouped dependency edges (blocked by /
+-- | blocking / tracks / tracked in) as table rows under
+-- | an expanded item.
+renderEdges
+  :: forall w
+   . Array Edge
+  -> Array (HH.HTML w Action)
+renderEdges edges =
+  if null edges then []
+  else
+    let
+      group kind =
+        filter (\(Edge e) -> e.kind == kind) edges
+      section label kind =
+        let
+          es = group kind
+        in
+          if null es then []
+          else [ renderEdgeGroup label es ]
+    in
+      [ HH.tr
+          [ HP.class_ (HH.ClassName "detail-row") ]
+          [ HH.td
+              [ HP.colSpan 3
+              , HP.style
+                  "padding:6px 10px; font-size:12px"
+              ]
+              ( section "Blocked by" EdgeBlockedBy
+                  <> section "Blocking" EdgeBlocking
+                  <> section "Tracks" EdgeTracks
+                  <> section "Tracked in" EdgeTrackedIn
+              )
+          ]
+      ]
+
+renderEdgeGroup
+  :: forall w
+   . String
+  -> Array Edge
+  -> HH.HTML w Action
+renderEdgeGroup label edges =
+  HH.div
+    [ HP.style "margin:2px 0" ]
+    [ HH.span
+        [ HP.style
+            "color:var(--text-dim); margin-right:6px"
+        ]
+        [ HH.text (label <> ":") ]
+    , HH.span_
+        ( Array.intersperse
+            ( HH.span
+                [ HP.style
+                    "color:var(--text-dim); margin:0 4px"
+                ]
+                [ HH.text "\x00B7" ]
+            )
+            (map renderEdgeRef edges)
+        )
+    ]
+
+renderEdgeRef
+  :: forall w
+   . Edge
+  -> HH.HTML w Action
+renderEdgeRef (Edge e) =
+  let
+    label = e.repo <> "#" <> show e.number
+    titleAttr = case e.title of
+      Just t -> t <> " \x00B7 " <> sourceTag e.source
+      Nothing -> sourceTag e.source
+    sourceBadge = HH.span
+      [ HP.style
+          "font-size:10px; color:var(--text-dim); margin-left:4px"
+      ]
+      [ HH.text ("[" <> sourceTag e.source <> "]") ]
+  in
+    case e.url of
+      Just u ->
+        HH.span_
+          [ HH.a
+              [ HP.href u
+              , HP.target "_blank"
+              , HP.title titleAttr
+              ]
+              [ HH.text label ]
+          , sourceBadge
+          ]
+      Nothing ->
+        HH.span
+          [ HP.title titleAttr ]
+          [ HH.text label, sourceBadge ]
+
+sourceTag :: EdgeSource -> String
+sourceTag SourceNative = "native"
+sourceTag SourceTaskList = "tasklist"
+sourceTag SourceBody = "body"
 
 -- | Previous column in the Kanban flow.
 prevCol :: String -> String
