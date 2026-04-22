@@ -81,6 +81,7 @@ data Action
   | SubmitRenameProject String String
   | ToggleKanbanLabelFilter String
   | SetKanbanProject String
+  | ClearKanbanProject
   | CreateKanbanProject
   | LaunchAgent String String Int
   | DetachAgent String Int

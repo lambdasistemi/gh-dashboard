@@ -12,6 +12,7 @@ module App.Storage
   , saveAgentServer
   , loadKanbanProject
   , saveKanbanProject
+  , clearKanbanProject
   , clearToken
   , clearAll
   ) where
@@ -303,6 +304,12 @@ saveKanbanProject pid = do
   s <- localStorage w
   Storage.setItem storageKeyKanbanProject pid s
 
+clearKanbanProject :: Effect Unit
+clearKanbanProject = do
+  w <- window
+  s <- localStorage w
+  Storage.removeItem storageKeyKanbanProject s
+
 storageKeyCryptoKey :: String
 storageKeyCryptoKey = "gh-dashboard-crypto-key"
 
@@ -320,3 +327,5 @@ clearAll = do
   Storage.removeItem storageKeyRepos s
   Storage.removeItem storageKeyView s
   Storage.removeItem storageKeyCryptoKey s
+  Storage.removeItem storageKeyKanbanProject s
+  Storage.removeItem storageKeyAgentServer s
