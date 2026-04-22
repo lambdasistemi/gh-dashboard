@@ -96,19 +96,40 @@ renderProjectSetup
 renderProjectSetup state =
   HH.div
     [ HP.class_ (HH.ClassName "kanban-setup") ]
-    [ HH.h2_ [ HH.text "Select a project" ]
+    [ HH.h2_ [ HH.text "Pick a Kanban project" ]
     , HH.p
         [ HP.class_ (HH.ClassName "muted") ]
         [ HH.text
-            "The project must have exactly three statuses: Backlog, WIP, Done."
+            "This dashboard shows one GitHub Projects v2 board as a Backlog / WIP / Done Kanban. The project must have a Status field with those three options."
+        ]
+    , HH.ol
+        [ HP.class_ (HH.ClassName "muted")
+        , HP.style "padding-left:1.2em; margin:0 0 12px"
+        ]
+        [ HH.li_
+            [ HH.text
+                "Click "
+            , HH.strong_ [ HH.text "Check" ]
+            , HH.text
+                " on a project to verify it has Backlog/WIP/Done."
+            ]
+        , HH.li_
+            [ HH.text "If it's compatible, click "
+            , HH.strong_ [ HH.text "Use this" ]
+            , HH.text " to bind it."
+            ]
+        , HH.li_
+            [ HH.text
+                "No compatible project? Create one below."
+            ]
         ]
     , if state.projectsLoading then
-        HH.p_ [ HH.text "Loading projects..." ]
+        HH.p_ [ HH.text "Loading projects\x2026" ]
       else if null state.projects then
         HH.div_
           [ HH.p
               [ HP.class_ (HH.ClassName "muted") ]
-              [ HH.text "No projects found." ]
+              [ HH.text "No projects found for this token." ]
           , refreshButton RefreshProjects
           ]
       else
@@ -122,15 +143,20 @@ renderProjectSetup state =
                   state.projects
               )
           , HH.div
+              [ HP.style "margin-top:8px" ]
+              [ refreshButton RefreshProjects ]
+          , HH.div
               [ HP.class_
                   (HH.ClassName "kanban-create")
+              , HP.style
+                  "margin-top:20px; padding-top:12px; border-top:1px solid var(--border)"
               ]
               [ HH.p
                   [ HP.class_
                       (HH.ClassName "muted")
                   ]
                   [ HH.text
-                      "Or create a new project:"
+                      "None of these work? Create a new one:"
                   ]
               , HH.button
                   [ HE.onClick \_ ->
@@ -146,7 +172,10 @@ renderProjectSetup state =
                       (HH.ClassName "muted")
                   ]
                   [ HH.text
-                      "After creation, rename the default statuses to Backlog, WIP, Done in GitHub."
+                      "After creation, rename the default statuses to Backlog, WIP, Done in GitHub, then click "
+                  , HH.strong_
+                      [ HH.text "Check" ]
+                  , HH.text " here."
                   ]
               ]
           ]
@@ -160,13 +189,62 @@ renderProjectOption
   -> HH.HTML w Action
 renderProjectOption state (Project p) =
   let
-    mSf = Map.lookup p.id
-      state.projectStatusFields
+    mSf = Map.lookup p.id state.projectStatusFields
     valid = case mSf of
       Just sf -> hasRequiredStatuses sf
       Nothing -> false
     loaded = Map.member p.id
       state.projectStatusFields
+    checking = Set.member p.id
+      state.projectsChecking
+    statusBadge =
+      if checking then
+        HH.span
+          [ HP.class_ (HH.ClassName "muted") ]
+          [ HH.text "Checking\x2026" ]
+      else if not loaded then
+        HH.span
+          [ HP.class_ (HH.ClassName "muted") ]
+          [ HH.text "Not checked yet" ]
+      else if valid then
+        HH.span
+          [ HP.class_ (HH.ClassName "badge")
+          , HP.style "color:var(--ok,#3fb950)"
+          ]
+          [ HH.text "\x2713 Compatible" ]
+      else
+        HH.span
+          [ HP.class_ (HH.ClassName "error") ]
+          [ HH.text
+              "\x2717 Needs Backlog/WIP/Done statuses"
+          ]
+    actionBtn =
+      if checking then
+        HH.button
+          [ HP.disabled true
+          , HP.class_ (HH.ClassName "btn-small")
+          ]
+          [ HH.text "Checking\x2026" ]
+      else if valid then
+        HH.button
+          [ HE.onClick \_ -> SetKanbanProject p.id
+          , HP.class_ (HH.ClassName "btn")
+          ]
+          [ HH.text "Use this" ]
+      else if loaded then
+        HH.button
+          [ HP.disabled true
+          , HP.class_ (HH.ClassName "btn-small")
+          , HP.title
+              "Rename the Status options on GitHub to Backlog, WIP, Done, then check again"
+          ]
+          [ HH.text "Not compatible" ]
+      else
+        HH.button
+          [ HE.onClick \_ -> CheckProjectCompat p.id
+          , HP.class_ (HH.ClassName "btn-small")
+          ]
+          [ HH.text "Check" ]
   in
     HH.div
       [ HP.class_
@@ -177,42 +255,26 @@ renderProjectOption state (Project p) =
                     else ""
               )
           )
-      , if valid then
-          HE.onClick \_ -> SetKanbanProject p.id
-        else
-          HE.onClick \_ ->
-            RefreshProjectItems p.id
+      , HP.style
+          "display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--border); border-radius:4px; margin-bottom:6px"
       ]
-      [ HH.span
-          [ HP.class_
-              (HH.ClassName "kanban-project-title")
+      [ HH.div
+          [ HP.style "flex:1; min-width:0" ]
+          [ HH.div
+              [ HP.class_
+                  (HH.ClassName "kanban-project-title")
+              , HP.style "font-weight:500"
+              ]
+              [ HH.text p.title ]
+          , HH.div
+              [ HP.style
+                  "font-size:11px; color:var(--text-dim); margin-top:2px"
+              ]
+              [ HH.text (show p.itemCount <> " items \x00B7 ")
+              , statusBadge
+              ]
           ]
-          [ HH.text p.title ]
-      , HH.span
-          [ HP.class_
-              (HH.ClassName "kanban-project-count")
-          ]
-          [ HH.text
-              (show p.itemCount <> " items")
-          ]
-      , if not loaded then
-          HH.span
-            [ HP.class_ (HH.ClassName "muted") ]
-            [ HH.text " (click to check)" ]
-        else if valid then
-          HH.span
-            [ HP.class_
-                (HH.ClassName "badge")
-            ]
-            [ HH.text " \x2713" ]
-        else
-          HH.span
-            [ HP.class_
-                (HH.ClassName "error")
-            ]
-            [ HH.text
-                " Missing Backlog/WIP/Done statuses"
-            ]
+      , actionBtn
       ]
 
 -- | Filters pane — repo and label selectors.

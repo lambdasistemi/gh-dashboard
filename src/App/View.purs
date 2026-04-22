@@ -7,14 +7,15 @@ module App.View
 
 import Prelude
 
-import Data.Array (null)
+import Data.Array (find, null)
 import Data.Show (show)
 import Data.Maybe (Maybe(..))
 import Lib.GitHub (RateLimit)
 import Halogen.HTML as HH
+import Halogen.HTML.Core (AttrName(..))
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Lib.Types (Page(..), Repo)
+import Lib.Types (Page(..), Project(..), Repo)
 import App.View.Kanban (columnCount, renderFilters, renderKanban)
 import Lib.UI.Widgets (settingsRow)
 import App.View.Projects (renderProjects)
@@ -43,6 +44,12 @@ renderTokenForm state =
             , HP.value state.token
             , HE.onValueInput SetToken
             , HP.class_ (HH.ClassName "input")
+            , HP.attr (AttrName "autocomplete") "off"
+            , HP.attr (AttrName "data-1p-ignore") "true"
+            , HP.attr (AttrName "data-lpignore") "true"
+            , HP.attr (AttrName "data-bwignore") "true"
+            , HP.attr (AttrName "data-form-type") "other"
+            , HP.name "gh-token"
             ]
         , HH.button
             [ HE.onClick \_ -> SubmitToken
@@ -240,6 +247,10 @@ renderSettings state =
             (HH.ClassName "detail-heading")
         ]
         [ HH.text "Settings" ]
+    -- Kanban project
+    , settingsRow "Kanban project"
+        "The GitHub Projects v2 board shown in the Backlog/WIP/Done columns"
+        (renderKanbanProjectSetting state)
     -- Agent server
     , settingsRow "Agent"
         "URL of the agent daemon that manages sessions and worktrees"
@@ -305,6 +316,39 @@ renderSettings state =
             [ HH.text "Source code" ]
         ]
     ]
+
+-- | Current Kanban project display + "Change project" action.
+renderKanbanProjectSetting
+  :: forall w. State -> Array (HH.HTML w Action)
+renderKanbanProjectSetting state =
+  case state.kanbanProject of
+    Nothing ->
+      [ HH.span
+          [ HP.class_ (HH.ClassName "muted") ]
+          [ HH.text "No project selected" ]
+      ]
+    Just pid ->
+      let
+        title =
+          case
+            find
+              (\(Project p) -> p.id == pid)
+              state.projects
+            of
+            Just (Project p) -> p.title
+            Nothing -> pid
+      in
+        [ HH.span
+            [ HP.class_
+                (HH.ClassName "kanban-project-title")
+            ]
+            [ HH.text title ]
+        , HH.button
+            [ HE.onClick \_ -> ClearKanbanProject
+            , HP.class_ (HH.ClassName "btn-small")
+            ]
+            [ HH.text "Change project" ]
+        ]
 
 -- | Page indicator dots for mobile swipe nav.
 renderPageIndicator

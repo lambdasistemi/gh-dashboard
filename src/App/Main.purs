@@ -95,6 +95,7 @@ import App.Refresh (doRefresh, loadCachedRepos)
 import Lib.Util.Repo (applyFilter)
 import App.Storage
   ( clearAll
+  , clearKanbanProject
   , clearToken
   , loadAgentServer
   , loadKanbanProject
@@ -161,6 +162,7 @@ initialState =
   , expandedProject: Nothing
   , projectItems: Map.empty
   , projectItemsLoading: false
+  , projectsChecking: Set.empty
   , projectRepoFilters: Set.empty
   , projectStatusFields: Map.empty
   , newItemTitle: ""
@@ -245,7 +247,9 @@ handleAction = case _ of
         H.modify_ _
           { token = tok, hasToken = true }
         handleAction RefreshAgentSessions
-        -- Load kanban project items if configured
+        -- Load kanban project items if configured;
+        -- otherwise fetch the project list so the
+        -- setup picker populates on Kanban pages.
         case kbProject of
           Just projId -> do
             cachedItems <- H.liftAff $
@@ -262,7 +266,8 @@ handleAction = case _ of
               Nothing -> pure unit
             handleAction
               (RefreshProjectItems projId)
-          Nothing -> pure unit
+          Nothing ->
+            handleAction RefreshProjects
         case vs.currentPage of
           BacklogPage -> pure unit
           WIPPage -> pure unit
@@ -325,6 +330,11 @@ handleAction = case _ of
         , loading = true
         }
       doRefresh st.token
+      -- Always fetch projects so the Kanban picker
+      -- populates even if the user lands straight
+      -- on a Kanban column without a selected project.
+      when (st.kanbanProject == Nothing) do
+        handleAction RefreshProjects
 
   ------------------------------------------------
   -- Repo actions (delegated)
@@ -455,6 +465,11 @@ handleAction = case _ of
         , currentPage = ReposPage
         , expandedProject = Nothing
         , projectItems = Map.empty
+        , kanbanProject = Nothing
+        , agentServer = ""
+        , projectStatusFields = Map.empty
+        , kanbanLabelFilters = Set.empty
+        , projectRepoFilters = Set.empty
         }
 
   SwitchPage page -> do
@@ -462,10 +477,17 @@ handleAction = case _ of
     persistView
     handleAction RefreshAgentSessions
     st <- H.get
+    let
+      ensureProjectsLoaded =
+        when
+          ( st.kanbanProject == Nothing
+              && null st.projects
+          )
+          (handleAction RefreshProjects)
     case page of
-      BacklogPage -> pure unit
-      WIPPage -> pure unit
-      DonePage -> pure unit
+      BacklogPage -> ensureProjectsLoaded
+      WIPPage -> ensureProjectsLoaded
+      DonePage -> ensureProjectsLoaded
       FiltersPage -> pure unit
       SettingsPage -> pure unit
       ProjectsPage ->
@@ -537,6 +559,26 @@ handleAction = case _ of
     H.modify_ _ { kanbanProject = Just projId }
     liftEffect $ saveKanbanProject projId
     handleAction (RefreshProjectItems projId)
+  ClearKanbanProject -> do
+    liftEffect clearKanbanProject
+    H.modify_ _
+      { kanbanProject = Nothing
+      , projectItems = Map.empty
+      , projectStatusFields = Map.empty
+      , kanbanLabelFilters = Set.empty
+      , projectRepoFilters = Set.empty
+      }
+    handleAction RefreshProjects
+  CheckProjectCompat projId -> do
+    H.modify_ \s -> s
+      { projectsChecking =
+          Set.insert projId s.projectsChecking
+      }
+    handleAction (RefreshProjectItems projId)
+    H.modify_ \s -> s
+      { projectsChecking =
+          Set.delete projId s.projectsChecking
+      }
   CreateKanbanProject -> do
     st <- H.get
     result <- H.liftAff $
