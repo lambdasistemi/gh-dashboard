@@ -16,6 +16,9 @@ module Lib.Types
   , Page(..)
   , AgentSession
   , AgentBranch
+  , Edge(..)
+  , EdgeKind(..)
+  , EdgeSource(..)
   ) where
 
 import Prelude
@@ -283,7 +286,43 @@ newtype ProjectItem = ProjectItem
   , labels :: Array String
   , number :: Maybe Int
   , body :: Maybe String
+  , edges :: Array Edge
   }
+
+-- | Direction / meaning of a dependency edge between
+-- | two issues.
+data EdgeKind
+  = EdgeBlockedBy
+  | EdgeBlocking
+  | EdgeTracks
+  | EdgeTrackedIn
+
+derive instance eqEdgeKind :: Eq EdgeKind
+derive instance ordEdgeKind :: Ord EdgeKind
+
+-- | Which source we learnt the edge from.
+data EdgeSource
+  = SourceNative
+  | SourceTaskList
+  | SourceBody
+
+derive instance eqEdgeSource :: Eq EdgeSource
+derive instance ordEdgeSource :: Ord EdgeSource
+
+-- | A dependency edge pointing from one issue to
+-- | another. `repo` is `"owner/repo"`; when absent
+-- | in source material it defaults to the item's own
+-- | repo.
+newtype Edge = Edge
+  { kind :: EdgeKind
+  , source :: EdgeSource
+  , repo :: String
+  , number :: Int
+  , title :: Maybe String
+  , url :: Maybe String
+  }
+
+derive instance eqEdge :: Eq Edge
 
 -- | Status field metadata for a project.
 type StatusField =
