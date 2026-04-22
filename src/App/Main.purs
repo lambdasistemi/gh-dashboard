@@ -162,6 +162,7 @@ initialState =
   , expandedProject: Nothing
   , projectItems: Map.empty
   , projectItemsLoading: false
+  , projectsChecking: Set.empty
   , projectRepoFilters: Set.empty
   , projectStatusFields: Map.empty
   , newItemTitle: ""
@@ -568,6 +569,16 @@ handleAction = case _ of
       , projectRepoFilters = Set.empty
       }
     handleAction RefreshProjects
+  CheckProjectCompat projId -> do
+    H.modify_ \s -> s
+      { projectsChecking =
+          Set.insert projId s.projectsChecking
+      }
+    handleAction (RefreshProjectItems projId)
+    H.modify_ \s -> s
+      { projectsChecking =
+          Set.delete projId s.projectsChecking
+      }
   CreateKanbanProject -> do
     st <- H.get
     result <- H.liftAff $

@@ -12,6 +12,7 @@ import Data.Show (show)
 import Data.Maybe (Maybe(..))
 import Lib.GitHub (RateLimit)
 import Halogen.HTML as HH
+import Halogen.HTML.Core (AttrName(..))
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Lib.Types (Page(..), Project(..), Repo)
@@ -43,6 +44,12 @@ renderTokenForm state =
             , HP.value state.token
             , HE.onValueInput SetToken
             , HP.class_ (HH.ClassName "input")
+            , HP.attr (AttrName "autocomplete") "off"
+            , HP.attr (AttrName "data-1p-ignore") "true"
+            , HP.attr (AttrName "data-lpignore") "true"
+            , HP.attr (AttrName "data-bwignore") "true"
+            , HP.attr (AttrName "data-form-type") "other"
+            , HP.name "gh-token"
             ]
         , HH.button
             [ HE.onClick \_ -> SubmitToken

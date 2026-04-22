@@ -82,6 +82,7 @@ data Action
   | ToggleKanbanLabelFilter String
   | SetKanbanProject String
   | ClearKanbanProject
+  | CheckProjectCompat String
   | CreateKanbanProject
   | LaunchAgent String String Int
   | DetachAgent String Int
@@ -126,6 +127,7 @@ type State =
   , expandedProject :: Maybe String
   , projectItems :: Map String (Array ProjectItem)
   , projectItemsLoading :: Boolean
+  , projectsChecking :: Set String
   , projectRepoFilters :: Set String
   , projectStatusFields :: Map String StatusField
   , newItemTitle :: String
